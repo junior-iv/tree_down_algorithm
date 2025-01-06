@@ -81,7 +81,6 @@ class Node:
                         queue.append(nodes_child)
         else:
             get_list(self)
-        print()
 
         return list_result
 
