@@ -178,16 +178,9 @@ class Tree:
                     self.root = newick_node
 
                 print()
-                print(dict_children.get('node'))
-                print(dict_children.get('children'))
                 self.__set_children_list_from_string(dict_children.get('children'), newick_node, num)
-                # if not self.check_tree_for_binary():
-                #     self.set_binary_tree()
 
             return self
-
-    # def set_binary_tree(self):
-    #
 
     def get_html_tree(self, style: str = '', status: str = '') -> str:
         """This method is for internal use only."""
