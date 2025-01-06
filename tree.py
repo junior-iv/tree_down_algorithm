@@ -177,6 +177,7 @@ class Tree:
                     newick_node = self.__set_node(dict_children.get('node') + dict_children.get('distance_to_father'), num)
                     self.root = newick_node
 
+                print()
                 self.__set_children_list_from_string(dict_children.get('children'), newick_node, num)
 
             return self
