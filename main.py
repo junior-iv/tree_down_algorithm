@@ -69,6 +69,8 @@ if __name__ == '__main__':
 
     sf.calculate_tree_likelihood(newick_tree, pattern_msa, 'down', 'S2')
 
+    newick_text = '((S1: 0.3, S2: 0.15):0.1,(S3:0.16,(S4:0.11,S5:0.73):0.9):0.4,S6:0.14);'
+    newick_tree = Tree.rename_nodes(newick_text)
     Tree.tree_to_csv(newick_tree, 'result_files/tree.csv')
 
 

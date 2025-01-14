@@ -362,17 +362,18 @@ class Tree:
     @staticmethod
     def tree_to_csv(newick_tree: Union[str, 'Tree'], file_name: str = 'file.csv'):
         nodes_info = newick_tree.get_list_nodes_info(False, True)
-        new_nodes_info = []
         for node_info in nodes_info:
             for i in ('lavel', 'node_type', 'full_distance', 'up_vector', 'down_vector', 'likelihood'):
                 node_info.pop(i)
-        # tree_table = pd.Series([pd.Series(i) for i in nodes_info], index=[i.get('node') for i in nodes_info])
-        # tree_table.sort_values('children')
-        # print(tree_table.to_csv())
+            if not node_info.get('father_name'):
+                node_info.update({'father_name': 'root'})
+            node_info.update({'distance': '' if not node_info.get('distance') else
+                             str(node_info.pop('distance')).ljust(8, '0')})
 
         tree_table = pd.DataFrame([i for i in nodes_info], index=None)
         tree_table = tree_table.rename(columns={'node': 'Name', 'distance': 'Distance to father', 'father_name':
                                        'Parent', 'children': 'child'})
+        tree_table = tree_table.reindex(columns=['Name', 'Distance to father', 'Parent', 'child'])
         tree_table = tree_table.sort_values(by=['child'])
-        tree_table.to_csv(file_name, index=False, sep=';')
+        tree_table.to_csv(file_name, index=False, sep='\t')
 
