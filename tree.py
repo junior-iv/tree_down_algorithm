@@ -1,5 +1,5 @@
 from node import Node
-from typing import Optional, List, Union, Dict
+from typing import Optional, List, Union, Dict, NoReturn
 import numpy as np
 import pandas as pd
 
@@ -7,7 +7,7 @@ import pandas as pd
 class Tree:
     root: Optional[Node]
 
-    def __init__(self, data: Union[str, Node, None] = None) -> None:
+    def __init__(self, data: Union[str, Node, None] = None) -> NoReturn:
         if isinstance(data, str):
             self.newick_to_tree(data)
         elif isinstance(data, Node):
@@ -40,7 +40,7 @@ class Tree:
         return self > other or self == other or len(str(self)) > len(str(other))
 
     def print_node_list(self, reverse: bool = False, with_additional_details: bool = False, mode: Optional[str] = None,
-                        filters: Optional[Dict[str, List[Union[float, int, str, List[float]]]]] = None) -> None:
+                        filters: Optional[Dict[str, List[Union[float, int, str, List[float]]]]] = None) -> NoReturn:
         """
         Print a list of nodes.
 
@@ -86,7 +86,7 @@ class Tree:
         """
         return len(self.get_list_nodes_info(False, True, None, filters))
 
-    def get_node_by_name(self, name: str) -> None:
+    def get_node_by_name(self, name: str) -> NoReturn:
         result = None
 
         def get_node(newick_node: Node, node_name: str):
@@ -208,8 +208,8 @@ class Tree:
         """This method is for internal use only."""
         return self.subtree_to_structure(self.root, reverse)
 
-    def add_distance_to_father(self, distance_to_father: float = 0) -> None:
-        def add_distance(newick_node: Node) -> None:
+    def add_distance_to_father(self, distance_to_father: float = 0) -> NoReturn:
+        def add_distance(newick_node: Node) -> NoReturn:
             nonlocal distance_to_father
             newick_node.distance_to_father += distance_to_father
             newick_node.distance_to_father = round(newick_node.distance_to_father, 12)
@@ -221,7 +221,7 @@ class Tree:
     def get_edges_list(self, reverse: bool = False) -> List[str]:
         list_result = []
 
-        def get_list(newick_node: Node) -> None:
+        def get_list(newick_node: Node) -> NoReturn:
             nonlocal list_result
             if newick_node.father:
                 list_result.append((newick_node.father.name, newick_node.name))
@@ -290,7 +290,7 @@ class Tree:
                     return newick_node
         return None
 
-    def __set_children_list_from_string(self, str_children: str, father: Optional[Node], num) -> None:  # List[Node]:
+    def __set_children_list_from_string(self, str_children: str, father: Optional[Node], num) -> NoReturn:
         """This method is for internal use only."""
         str_children = str_children[1:-1] if str_children.startswith('(') and str_children.endswith(
             ')') else str_children
@@ -360,7 +360,7 @@ class Tree:
         return newick_tree
 
     @staticmethod
-    def tree_to_csv(newick_tree: Union[str, 'Tree'], file_name: str = 'file.csv'):
+    def tree_to_csv(newick_tree: Union[str, 'Tree'], file_name: str = 'file.csv') -> NoReturn:
         nodes_info = newick_tree.get_list_nodes_info(False, True)
         for node_info in nodes_info:
             for i in ('lavel', 'node_type', 'full_distance', 'up_vector', 'down_vector', 'likelihood'):
@@ -377,4 +377,3 @@ class Tree:
         tree_table = tree_table.reindex(columns=['Name', 'Parent', 'Distance to father', 'child'])
         tree_table = tree_table.sort_values(by=['child'])
         tree_table.to_csv(file_name, index=False, sep='\t')
-
