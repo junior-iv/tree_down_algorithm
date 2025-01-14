@@ -1,5 +1,6 @@
 from node import Node
 from typing import Optional, List, Union, Dict
+import numpy as np
 
 
 class Tree:
@@ -55,7 +56,7 @@ class Tree:
         Returns:
             None: This function does not return any value; it only prints the nodes to the standard output.
         """
-        data_structure = self.root.list_nodes_info(reverse, with_additional_details, mode, filters)
+        data_structure = self.root.get_list_nodes_info(reverse, with_additional_details, mode, filters)
 
         str_result = ''
         for i in data_structure:
@@ -64,7 +65,8 @@ class Tree:
 
     def get_list_nodes_info(self, reverse: bool = False, with_additional_details: bool = False, mode: Optional[str] =
                             None, filters: Optional[Dict[str, List[Union[float, int, str, List[float]]]]] = None
-                            ) -> List[Dict[str, Union[float, bool, str, List[float]]]]:
+                            ) -> List[Union[Dict[str, Union[float, np.ndarray, bool, str, List[float],
+                                      List[np.ndarray]]], 'Node']]:
         """
         Args:
             reverse (bool, optional): If `True`, the resulting list of nodes will be in reverse order.
@@ -74,7 +76,7 @@ class Tree:
             mode (Optional[str]): `None` (default), 'pre-order', 'in-order', 'post-order', 'level-order'.
             filters (Dict, optional):
         """
-        return self.root.list_nodes_info(reverse, with_additional_details, mode, filters)
+        return self.root.get_list_nodes_info(reverse, with_additional_details, mode, filters)
 
     def get_node_count(self, filters: Optional[Dict[str, List[Union[float, int, str, List[float]]]]] = None) -> int:
         """
@@ -82,6 +84,21 @@ class Tree:
             filters (Dict, optional):
         """
         return len(self.get_list_nodes_info(False, True, None, filters))
+
+    def get_node_by_name(self, name: str) -> None:
+        result = None
+
+        def get_node(newick_node: Node, node_name: str):
+            nonlocal result
+            if newick_node.name == node_name:
+                result = newick_node
+            else:
+                for child in newick_node.children:
+                    get_node(child, node_name)
+
+        get_node(self.root, name)
+
+        return result
 
     def get_newick(self, reverse: bool = False) -> str:
         """
@@ -117,7 +134,7 @@ class Tree:
             bool: `True` if a node with the specified name is found; `False` otherwise.
         """
 
-        return name in self.root.list_nodes_info()
+        return name in self.root.get_list_nodes_info()
 
     def newick_to_tree(self, newick: str) -> Optional['Tree']:
         """
@@ -172,9 +189,10 @@ class Tree:
                 if list_children.index(dict_children):
                     newick_node = self.__find_node_by_name(dict_children.get('node'))
                     newick_node = newick_node if newick_node else self.__set_node(
-                        dict_children.get('node') + dict_children.get('distance_to_father'), num)
+                        f'{dict_children.get("node")}{dict_children.get("distance_to_father")}', num)
                 else:
-                    newick_node = self.__set_node(dict_children.get('node') + dict_children.get('distance_to_father'), num)
+                    newick_node = self.__set_node(
+                        f'{dict_children.get("node")}{dict_children.get("distance_to_father")}', num)
                     self.root = newick_node
 
                 self.__set_children_list_from_string(dict_children.get('children'), newick_node, num)
@@ -280,20 +298,9 @@ class Tree:
             newick_node = self.__set_node(str_node.strip(), num)
             newick_node.father = father
             father.children.append(newick_node)
-        # lst_children = str_children.split(',')
-        # lst_nodes = []
-        # for str_node in lst_children:
-        #     newick_node = self.__set_node(str_node.strip(), num)
-        #     # newick_node.father = father
-        #     lst_nodes.append(newick_node)
-        # len_lst_nodes = len(lst_nodes)
-        # limit = 2
-        # integer_division = len_lst_nodes // limit
-        # remainder_from_division = len_lst_nodes % limit
-        # number_of_parents = integer_division + remainder_from_division
 
     def check_tree_for_binary(self) -> bool:
-        nodes_list = self.root.list_nodes_info(False, True)
+        nodes_list = self.root.get_list_nodes_info(False, True)
         for newick_node in nodes_list:
             for key in newick_node.keys():
                 if key == 'children' and len(newick_node.get(key)) > 2:
@@ -302,8 +309,7 @@ class Tree:
 
     @staticmethod
     def check_newick(newick_text: str) -> bool:
-        return (newick_text and newick_text.startswith('(') and newick_text[:-1].endswith(')') and
-                newick_text.endswith(';'))
+        return newick_text and newick_text.startswith('(') and newick_text.endswith(';')
 
     @staticmethod
     def __set_node(node_str: str, num) -> Node:

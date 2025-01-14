@@ -1,28 +1,36 @@
 from typing import Optional, Dict, Union, List
-from collections import deque
+import numpy as np
+# from collections import deque
 
 
 class Node:
     father: Optional['Node']
-    children: list
+    children: List['Node']
     name: str
-    distance_to_father: float
+    distance_to_father: Union[float, np.ndarray]
+    up_vector: List[Union[float, np.ndarray]]
+    down_vector: List[Union[float, np.ndarray]]
+    likelihood: Union[float, np.ndarray]
 
     def __init__(self, name: Optional[str]):
         self.father = None
         self.children = []
         self.name = name
-        self.distance_to_father = 0
+        self.distance_to_father = 0.0
+        self.up_vector = []
+        self.down_vector = []
+        self.likelihood = 0.0
 
     def __str__(self) -> str:
         return self.get_name(self, True)
 
     def __dir__(self) -> list:
-        return ['children', 'distance_to_father', 'father', 'name']
+        return ['children', 'distance_to_father', 'father', 'name', 'up_vector', 'down_vector', 'likelihood']
 
-    def list_nodes_info(self, reverse: bool = False, with_additional_details: bool = False, mode: Optional[
-                        str] = None, filters: Optional[Dict[str, List[Union[float, int, str, List[float]]]]] = None
-                        ) -> List[Dict[str, Union[float, bool, str, List[float]]]]:
+    def get_list_nodes_info(self, reverse: bool = False, with_additional_details: bool = False, mode: Optional[
+                        str] = None, filters: Optional[Dict[str, List[Union[float, int, str, List[float]]]]] = None,
+                        only_node_list: bool = False) -> List[Union[Dict[str, Union[float, np.ndarray, bool, str, List[
+                                                         float], List[np.ndarray]]], 'Node']]:
         """
         Retrieve a list of descendant nodes from a given node, including the node itself or retrieve a list of
         descendant nodes from the current instance of the `Tree` class.
@@ -38,6 +46,7 @@ class Node:
             with_additional_details (bool, optional): `False` (default).
             mode (Optional[str]): `None` (default), 'pre-order', 'in-order', 'post-order', 'level-order'.
             filters (Dict, optional):
+            only_node_list (Dict, optional): `False` (default).
         Returns:
             list: A list of nodes names including the specified `node` (or the current instance's nodes  names) and its
                                     children. The list is ordered according to the `reverse` argument.
@@ -45,46 +54,52 @@ class Node:
         list_result = []
         mode = 'pre-order' if mode is None or mode.lower() not in ('pre-order', 'in-order', 'post-order', 'level-order'
                                                                    ) else mode.lower()
+        condition = with_additional_details or only_node_list
 
         def get_list(trees_node: Node) -> None:
-            nonlocal list_result, reverse, filters, mode, with_additional_details
+            nonlocal list_result, reverse, filters, mode, condition
 
             nodes_info = trees_node.get_nodes_info()
+            list_item = trees_node if only_node_list else nodes_info
             if trees_node.check_filter_compliance(filters, nodes_info):
                 if mode == 'pre-order':
-                    list_result.append(nodes_info if with_additional_details else trees_node.name)
+                    list_result.append(list_item if condition else trees_node.name)
 
                 for i, child in enumerate(trees_node.children[::-1]) if reverse else enumerate(trees_node.children):
                     get_list(child)
-                    if mode == 'in-order' and i == 0:
-                        list_result.append(nodes_info if with_additional_details else trees_node.name)
+                    if mode == 'in-order' and not i:
+                        list_result.append(list_item if condition else trees_node.name)
 
                 if not trees_node.children:
                     if mode == 'in-order':
-                        list_result.append(nodes_info if with_additional_details else trees_node.name)
+                        list_result.append(list_item if condition else trees_node.name)
 
                 if mode == 'post-order':
-                    list_result.append(nodes_info if with_additional_details else trees_node.name)
+                    list_result.append(list_item if condition else trees_node.name)
             else:
-                for i, child in enumerate(trees_node.children[::-1]) if reverse else enumerate(trees_node.children):
+                for child in trees_node.children[::-1] if reverse else trees_node.children:
                     get_list(child)
 
         if mode == 'level-order':
-            queue = deque([self])
-            while queue:
-                newick_node = queue.popleft()
+            nodes_list = [self]
+            # queue = deque([self])
+            # while queue:
+            #     newick_node = queue.popleft()
+            while nodes_list:
+                newick_node = nodes_list.pop(0)
                 if newick_node.check_filter_compliance(filters, newick_node.get_nodes_info()):
-                    list_result.append(newick_node.get_nodes_info() if with_additional_details else newick_node.name)
+                    level_order_item = newick_node if only_node_list else newick_node.get_nodes_info()
+                    list_result.append(level_order_item if condition else newick_node.name)
 
                 if newick_node.children[::-1] if reverse else newick_node.children:
                     for nodes_child in newick_node.children:
-                        queue.append(nodes_child)
+                        nodes_list.append(nodes_child)
         else:
             get_list(self)
 
         return list_result
 
-    def get_nodes_info(self) -> Dict[str, Union[float, bool, str, List[float]]]:
+    def get_nodes_info(self) -> Dict[str, Union[float, np.ndarray, bool, str, List[float], List[np.ndarray]]]:
         lavel = 1
         full_distance = [self.distance_to_father]
         father = self.father
@@ -102,11 +117,9 @@ class Node:
         if not self.children:
             node_type = 'leaf'
 
-        info = {'node': self.name, 'distance': full_distance[0],
-                'lavel': lavel, 'node_type': node_type, 'father_name': father_name,
-                'full_distance': full_distance, 'children': [i.name for i in self.children]}
-
-        return info
+        return {'node': self.name, 'distance': full_distance[0], 'lavel': lavel, 'node_type': node_type, 'father_name':
+                father_name, 'full_distance': full_distance, 'children': [i.name for i in self.children], 'up_vector':
+                self.up_vector, 'down_vector': self.down_vector, 'likelihood': self.likelihood}
 
     @staticmethod
     def check_filter_compliance(filters: Optional[Dict[str, List[Union[float, int, str, List[float]]]]], info: Dict[str,
@@ -145,7 +158,7 @@ class Node:
         child.father = self
         child.distance_to_father = distance_to_father
 
-    def get_full_distance_to_leafs(self) -> float:
+    def get_full_distance_to_leaves(self) -> float:
         list_result = []
         child = self
         while True:
