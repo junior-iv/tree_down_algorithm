@@ -59,8 +59,9 @@ import service_functions as sf
 #                '\n>F2'
 #                '\n10000101010000000101010101111')
 
-newick_text = '((S1: 0.3, S2: 0.15):0.1,S3:0.4);'
+newick_text = '((S1: 0.3, S2: 0.15)N2:0.1,S3:0.4)N1;'
 
+# pattern_msa = '010'
 pattern_msa = ('>S1'
                '\n0'
                '\n>S2'
@@ -68,10 +69,5 @@ pattern_msa = ('>S1'
                '\n>S3'
                '\n0')
 
-alphabets = ({'0', '1'}, {'A', 'C', 'G', 'T'},
-             {'A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V'})
-
 if __name__ == '__main__':
-    newick_tree = Tree(newick_text)
-    alphabet = tuple(alphabets[0])
     sf.calculate_tree_likelihood(newick_text, pattern_msa, 'down')

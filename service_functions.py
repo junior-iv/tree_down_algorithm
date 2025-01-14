@@ -125,19 +125,18 @@ def calculate_tree_likelihood_using_up_down_algorithm(alphabet: Tuple[str, ...],
                 tree_pd_series.append(pd.Series(node_dict))
                 tree_pd_indexes.append(node_dict.get('node'))
             tree_info = pd.Series(tree_pd_series, index=tree_pd_indexes)
-            calculate_down(newick_node, tree_info, alphabet)
+            calculate_down(newick_node, tree_info, alphabet_size)
 
     return log_likelihood_list, log_likelihood, likelihood
 
 
-def calculate_down(newick_node: Node, tree_info: pd.Series, alphabet: Tuple[str, ...]) -> None:
-    alphabet_size = len(alphabet)
+def calculate_down(newick_node: Node, tree_info: pd.Series, alphabet_size: int) -> None:
     father = newick_node.father
     if not father:
         newick_node.down_vector = [1] * alphabet_size
         newick_node.likelihood = np.float64(1)
-        calculate_down(newick_node.children[0], tree_info, alphabet)
-        calculate_down(newick_node.children[1], tree_info, alphabet)
+        calculate_down(newick_node.children[0], tree_info, alphabet_size)
+        calculate_down(newick_node.children[1], tree_info, alphabet_size)
         return
 
     brother_vector = b_qmatrix = None
@@ -156,38 +155,46 @@ def calculate_down(newick_node: Node, tree_info: pd.Series, alphabet: Tuple[str,
         newick_node.down_vector.append(freq_f * freq_b)
 
     if newick_node.children:
-        calculate_down(newick_node.children[0], tree_info, alphabet)
-        calculate_down(newick_node.children[1], tree_info, alphabet)
+        calculate_down(newick_node.children[0], tree_info, alphabet_size)
+        calculate_down(newick_node.children[1], tree_info, alphabet_size)
 
 
-def calculate_tree_likelihood(newick_text: str, pattern_msa: Optional[str] = None, mode: str = 'up'):
+def calculate_tree_likelihood(newick_text: str, pattern_msa: Optional[str] = None, mode: str = 'up',
+                              verification_node_name: Optional[str] = None):
     """
         mode (str): `up` (default), 'up', 'down', 'marginal'.
     """
     newick_tree = Tree(newick_text)
     list_nodes_info = newick_tree.get_list_nodes_info(False, True, 'pre-order', {'node_type': ['leaf']})
 
+    pattern_msa = pattern_msa.strip()
     pattern_msa_list = pattern_msa.split()
     pattern_msa_dict = dict()
-    for j in range(len(pattern_msa_list) // 2):
-        if find_dict_in_iterable(list_nodes_info, 'node', pattern_msa_list[j + j][1::]):
-            pattern_msa_dict.update({pattern_msa_list[j + j][1::]: pattern_msa_list[j + j + 1]})
+    pattern_msa_list_size = len(pattern_msa_list)
+    if pattern_msa_list_size == 1:
+        for i, node_info in enumerate(list_nodes_info):
+            pattern_msa_dict.update({node_info.get('node'): pattern_msa[i]})
+    else:
+        for j in range(pattern_msa_list_size // 2):
+            if find_dict_in_iterable(list_nodes_info, 'node', pattern_msa_list[j + j][1::]):
+                pattern_msa_dict.update({pattern_msa_list[j + j][1::]: pattern_msa_list[j + j + 1]})
 
     alphabet = get_alphabet_from_dict(pattern_msa_dict)
     likelihood = calculate_tree_likelihood_using_up_down_algorithm(alphabet, newick_tree, pattern_msa_dict, mode)
 
-    nodes_info = newick_tree.get_list_nodes_info(False, True, 'pre-order')
-    table = pd.Series([pd.Series(i) for i in nodes_info], index=[i.get('node') for i in nodes_info])
-    for i in table:
-        print(i)
+    if verification_node_name:
+        nodes_info = newick_tree.get_list_nodes_info(False, True, 'pre-order')
+        table = pd.Series([pd.Series(i) for i in nodes_info], index=[i.get('node') for i in nodes_info])
+        for i in table:
+            print(i)
 
-    print(likelihood)
-    node_info = table.get('S2')
-    likelihood = 0
-    alphabet_size = len(alphabet)
-    qmatrix = get_jukes_cantor_qmatrix(node_info.get('distance'), alphabet_size)
-    for i in range(alphabet_size):
-        for j in range(alphabet_size):
-            likelihood += 1 / alphabet_size * node_info.get('up_vector')[i] * node_info.get('down_vector')[j] * qmatrix[i, j]
+        print(likelihood)
+        node_info = table.get(verification_node_name)
+        likelihood = 0
+        alphabet_size = len(alphabet)
+        qmatrix = get_jukes_cantor_qmatrix(node_info.get('distance'), alphabet_size)
+        for i in range(alphabet_size):
+            for j in range(alphabet_size):
+                likelihood += 1 / alphabet_size * node_info.get('up_vector')[i] * node_info.get('down_vector')[j] * qmatrix[i, j]
 
-    print(f'likelihood {likelihood}')
+        print(f'likelihood {likelihood}')
