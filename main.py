@@ -1,4 +1,3 @@
-from tree import Tree
 import service_functions as sf
 # pattern_msa = ('>A'
 #                '\n1'
@@ -70,4 +69,4 @@ pattern_msa = ('>S1'
                '\n0')
 
 if __name__ == '__main__':
-    sf.calculate_tree_likelihood(newick_text, pattern_msa, 'down')
+    sf.calculate_tree_likelihood(newick_text, pattern_msa, 'down', 'S2')
