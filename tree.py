@@ -360,7 +360,7 @@ class Tree:
         return newick_tree
 
     @staticmethod
-    def tree_to_csv(newick_tree: Union[str, 'Tree'], file_name: str = 'file.csv') -> NoReturn:
+    def tree_to_csv(newick_tree: Union[str, 'Tree'], file_name: str = 'file.csv', sep: str = '\t') -> NoReturn:
         nodes_info = newick_tree.get_list_nodes_info(False, True)
         for node_info in nodes_info:
             for i in ('lavel', 'node_type', 'full_distance', 'up_vector', 'down_vector', 'likelihood'):
@@ -376,4 +376,4 @@ class Tree:
                                        'Parent', 'children': 'child'})
         tree_table = tree_table.reindex(columns=['Name', 'Parent', 'Distance to father', 'child'])
         tree_table = tree_table.sort_values(by=['child'])
-        tree_table.to_csv(file_name, index=False, sep='\t')
+        tree_table.to_csv(file_name, index=False, sep=sep)
