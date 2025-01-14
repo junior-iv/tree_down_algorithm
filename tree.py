@@ -1,6 +1,7 @@
 from node import Node
 from typing import Optional, List, Union, Dict
 import numpy as np
+import pandas as pd
 
 
 class Tree:
@@ -339,3 +340,39 @@ class Tree:
             return count
 
         return sub_function
+
+    @staticmethod
+    def rename_nodes(newick_tree: Union[str, 'Tree'], node_name: str = 'N', fill_character: str = ' ', number_length:
+                     int = 0) -> 'Tree':
+        if isinstance(newick_tree, str):
+            newick_tree = Tree(newick_tree)
+        num = newick_tree.__counter()
+
+        nodes_list = [newick_tree.root]
+        while nodes_list:
+            newick_node = nodes_list.pop(0)
+
+            if newick_node.children:
+                newick_node.name = f'{node_name}{str(num()).rjust(number_length, fill_character)}'
+                for nodes_child in newick_node.children:
+                    nodes_list.append(nodes_child)
+
+        return newick_tree
+
+    @staticmethod
+    def tree_to_csv(newick_tree: Union[str, 'Tree'], file_name: str = 'file.csv'):
+        nodes_info = newick_tree.get_list_nodes_info(False, True)
+        new_nodes_info = []
+        for node_info in nodes_info:
+            for i in ('lavel', 'node_type', 'full_distance', 'up_vector', 'down_vector', 'likelihood'):
+                node_info.pop(i)
+        # tree_table = pd.Series([pd.Series(i) for i in nodes_info], index=[i.get('node') for i in nodes_info])
+        # tree_table.sort_values('children')
+        # print(tree_table.to_csv())
+
+        tree_table = pd.DataFrame([i for i in nodes_info], index=None)
+        tree_table = tree_table.rename(columns={'node': 'Name', 'distance': 'Distance to father', 'father_name':
+                                       'Parent', 'children': 'child'})
+        tree_table = tree_table.sort_values(by=['child'])
+        tree_table.to_csv(file_name, index=False, sep=';')
+

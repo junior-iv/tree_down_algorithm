@@ -73,46 +73,11 @@ def calculate_up(newick_node: Node, nodes_dict: Dict[str, Tuple[int, ...]], alph
         return newick_node.likelihood
 
 
-def calculate_tree_likelihood_using_up_down_algorithm(alphabet: Tuple[str, ...], newick_tree: Tree, pattern_msa_dict:
-                                                      Dict[str, str], mode: str) -> Tuple[List[float], float, float]:
-    alphabet_size = len(alphabet)
-    newick_node = newick_tree.root
-
-    leaves_info = newick_node.get_list_nodes_info(False, True, 'pre-order', {'node_type': ['leaf']})
-
-    len_seq = len(list(pattern_msa_dict.values())[0])
-    likelihood, log_likelihood, log_likelihood_list = 1, 0, []
-    for i_char in range(len_seq):
-        nodes_dict = dict()
-        for i in range(len(leaves_info)):
-            node_name = leaves_info[i].get('node')
-            sequence = pattern_msa_dict.get(node_name)[i_char]
-            frequency = [0] * alphabet_size
-            frequency[alphabet.index(sequence)] = 1
-            nodes_dict.update({node_name: tuple(frequency)})
-
-        char_likelihood = calculate_up(newick_node, nodes_dict, alphabet)
-        likelihood *= char_likelihood
-        log_likelihood += log(char_likelihood)
-        log_likelihood_list.append(log(char_likelihood))
-
-        if mode == 'down':
-            nodes_info = newick_tree.get_list_nodes_info(False, True, 'pre-order')
-            tree_pd_series, tree_pd_indexes = [], []
-            for node_dict in nodes_info:
-                tree_pd_series.append(pd.Series(node_dict))
-                tree_pd_indexes.append(node_dict.get('node'))
-            tree_info = pd.Series(tree_pd_series, index=tree_pd_indexes)
-            calculate_down(newick_node, tree_info, alphabet_size)
-
-    return log_likelihood_list, log_likelihood, likelihood
-
-
 def calculate_down(newick_node: Node, tree_info: pd.Series, alphabet_size: int) -> None:
     father = newick_node.father
     if not father:
         newick_node.down_vector = [1] * alphabet_size
-        newick_node.likelihood = np.float64(1)
+        # newick_node.likelihood = np.float64(1)
         calculate_down(newick_node.children[0], tree_info, alphabet_size)
         calculate_down(newick_node.children[1], tree_info, alphabet_size)
         return
@@ -154,12 +119,44 @@ def get_pattern_dict(newick_tree: Tree, pattern: str) -> Dict[str, str]:
     return pattern_dict
 
 
-def calculate_tree_likelihood(newick_text: str, pattern: Optional[str] = None, mode: str = 'up', verification_node_name:
-                              Optional[str] = None):
+def calculate_tree_likelihood_using_up_down_algorithm(alphabet: Tuple[str, ...], newick_tree: Tree, pattern_msa_dict:
+                                                      Dict[str, str], mode: str) -> Tuple[List[float], float, float]:
+    alphabet_size = len(alphabet)
+    newick_node = newick_tree.root
+
+    leaves_info = newick_node.get_list_nodes_info(False, True, 'pre-order', {'node_type': ['leaf']})
+
+    len_seq = len(list(pattern_msa_dict.values())[0])
+    likelihood, log_likelihood, log_likelihood_list = 1, 0, []
+    for i_char in range(len_seq):
+        nodes_dict = dict()
+        for i in range(len(leaves_info)):
+            node_name = leaves_info[i].get('node')
+            sequence = pattern_msa_dict.get(node_name)[i_char]
+            frequency = [0] * alphabet_size
+            frequency[alphabet.index(sequence)] = 1
+            nodes_dict.update({node_name: tuple(frequency)})
+
+        char_likelihood = calculate_up(newick_node, nodes_dict, alphabet)
+        likelihood *= char_likelihood
+        log_likelihood += log(char_likelihood)
+        log_likelihood_list.append(log(char_likelihood))
+
+        if mode == 'down':
+            nodes_info = newick_tree.get_list_nodes_info(False, True, 'pre-order')
+            tree_info = pd.Series([pd.Series(i) for i in nodes_info], index=[i.get('node') for i in nodes_info])
+            calculate_down(newick_node, tree_info, alphabet_size)
+
+    return log_likelihood_list, log_likelihood, likelihood
+
+
+def calculate_tree_likelihood(newick_tree: Union[str, Tree], pattern: Optional[str] = None, mode: str = 'up',
+                              verification_node_name: Optional[str] = None) -> None:
     """
         mode (str): `up` (default), 'up', 'down', 'marginal'.
     """
-    newick_tree = Tree(newick_text)
+    if isinstance(newick_tree, str):
+        newick_tree = Tree(newick_tree)
     pattern_dict = get_pattern_dict(newick_tree, pattern)
 
     alphabet = get_alphabet_from_dict(pattern_dict)

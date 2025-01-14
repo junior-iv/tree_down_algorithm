@@ -1,4 +1,5 @@
 import service_functions as sf
+from tree import Tree, Node
 # pattern_msa = ('>A'
 #                '\n1'
 #                '\n>B1'
@@ -58,15 +59,17 @@ import service_functions as sf
 #                '\n>F2'
 #                '\n10000101010000000101010101111')
 
-newick_text = '((S1: 0.3, S2: 0.15)N2:0.1,S3:0.4)N1;'
-
-# pattern_msa = '010'
-pattern_msa = ('>S1'
-               '\n0'
-               '\n>S2'
-               '\n1'
-               '\n>S3'
-               '\n0')
 
 if __name__ == '__main__':
-    sf.calculate_tree_likelihood(newick_text, pattern_msa, 'down', 'S2')
+    newick_text = '((S1: 0.3, S2: 0.15):0.1,S3:0.4);'
+
+    # pattern_msa = '010'
+    pattern_msa = '>S1\n0\n>S2\n1\n>S3\n0'
+    newick_tree = Tree.rename_nodes(newick_text)
+
+    sf.calculate_tree_likelihood(newick_tree, pattern_msa, 'down', 'S2')
+
+    Tree.tree_to_csv(newick_tree, 'result_files/tree.csv')
+
+
+
