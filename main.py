@@ -1,5 +1,6 @@
 import service_functions as sf
-from tree import Tree, Node
+from tree import Tree
+
 # pattern_msa = ('>A'
 #                '\n1'
 #                '\n>B1'

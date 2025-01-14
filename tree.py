@@ -367,13 +367,14 @@ class Tree:
                 node_info.pop(i)
             if not node_info.get('father_name'):
                 node_info.update({'father_name': 'root'})
-            node_info.update({'distance': '' if not node_info.get('distance') else
+            node_info.update({'distance': '    ' if not node_info.get('distance') else
                              str(node_info.pop('distance')).ljust(8, '0')})
+            node_info.update({'children': ' '.join(node_info.get('children'))})
 
         tree_table = pd.DataFrame([i for i in nodes_info], index=None)
         tree_table = tree_table.rename(columns={'node': 'Name', 'distance': 'Distance to father', 'father_name':
                                        'Parent', 'children': 'child'})
-        tree_table = tree_table.reindex(columns=['Name', 'Distance to father', 'Parent', 'child'])
+        tree_table = tree_table.reindex(columns=['Name', 'Parent', 'Distance to father', 'child'])
         tree_table = tree_table.sort_values(by=['child'])
         tree_table.to_csv(file_name, index=False, sep='\t')
 
