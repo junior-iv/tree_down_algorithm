@@ -2,6 +2,7 @@ from node import Node
 from typing import Optional, List, Union, Dict, NoReturn
 import numpy as np
 import pandas as pd
+# import os
 
 
 class Tree:
@@ -101,7 +102,8 @@ class Tree:
 
         return result
 
-    def get_newick(self, reverse: bool = False) -> str:
+    def get_newick(self, reverse: bool = False, with_internal_nodes: bool = False) -> str:
+
         """
         Convert the current tree structure to a Newick formatted string.
 
@@ -113,11 +115,12 @@ class Tree:
         Args:
             reverse (bool, optional): If `True`, reverse the order of the nodes in the Newick string.
                                       If `False` (default), preserve the natural order of the nodes.
+            with_internal_nodes (bool, optional):
 
         Returns:
             str: A Newick formatted string representing the tree structure.
         """
-        return f'{Node.subtree_to_newick(self.root, reverse)};'
+        return f'{Node.subtree_to_newick(self.root, reverse, with_internal_nodes)};'
 
     def find_node_by_name(self, name: str) -> bool:
         """
@@ -342,7 +345,7 @@ class Tree:
         return sub_function
 
     @staticmethod
-    def rename_nodes(newick_tree: Union[str, 'Tree'], node_name: str = 'N', fill_character: str = ' ', number_length:
+    def rename_nodes(newick_tree: Union[str, 'Tree'], node_name: str = 'N', fill_character: str = '0', number_length:
                      int = 0) -> 'Tree':
         if isinstance(newick_tree, str):
             newick_tree = Tree(newick_tree)
@@ -360,7 +363,12 @@ class Tree:
         return newick_tree
 
     @staticmethod
-    def tree_to_csv(newick_tree: Union[str, 'Tree'], file_name: str = 'file.csv', sep: str = '\t') -> NoReturn:
+    def tree_to_csv(newick_tree: Union[str, 'Tree'], file_name: str = 'file.csv', sep: str = '\t', sort_values_by:
+                    Optional[List[str]] = None) -> NoReturn:
+        if isinstance(newick_tree, str):
+            newick_tree = Tree(newick_tree)
+
+        sort_values_by = sort_values_by if sort_values_by else ['child', 'Name']
         nodes_info = newick_tree.get_list_nodes_info(False, True)
         for node_info in nodes_info:
             for i in ('lavel', 'node_type', 'full_distance', 'up_vector', 'down_vector', 'likelihood'):
@@ -368,12 +376,22 @@ class Tree:
             if not node_info.get('father_name'):
                 node_info.update({'father_name': 'root'})
             node_info.update({'distance': '    ' if not node_info.get('distance') else
-                             str(node_info.pop('distance')).ljust(8, '0')})
+                             f'{node_info.pop("distance"):.6f}'})
             node_info.update({'children': ' '.join(node_info.get('children'))})
 
         tree_table = pd.DataFrame([i for i in nodes_info], index=None)
         tree_table = tree_table.rename(columns={'node': 'Name', 'distance': 'Distance to father', 'father_name':
                                        'Parent', 'children': 'child'})
         tree_table = tree_table.reindex(columns=['Name', 'Parent', 'Distance to father', 'child'])
-        tree_table = tree_table.sort_values(by=['child'])
+        tree_table = tree_table.sort_values(by=sort_values_by)
         tree_table.to_csv(file_name, index=False, sep=sep)
+
+    @staticmethod
+    def tree_to_newick_file(newick_tree: Union[str, 'Tree'], file_name: str = 'tree_file.tree', with_internal_nodes:
+                            bool = False) -> NoReturn:
+        if isinstance(newick_tree, str):
+            newick_tree = Tree(newick_tree)
+        newick_text = f'{Node.subtree_to_newick(newick_tree.root, False, with_internal_nodes)};'
+        with open(file_name, 'w') as f:
+            f.write(newick_text)
+

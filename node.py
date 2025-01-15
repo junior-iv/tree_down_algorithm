@@ -135,23 +135,23 @@ class Node:
         return bool(permission)
 
     @classmethod
-    def subtree_to_newick(cls, node: Optional['Node'], reverse: bool = False) -> str:
+    def subtree_to_newick(cls, node: Optional['Node'], reverse: bool = False, with_internal_nodes: bool = False) -> str:
         """This method is for internal use only."""
         node_list = node.children[::-1] if reverse else node.children
         if node_list:
             result = '('
             for child in node_list:
-                result += (f'{cls.subtree_to_newick(child, reverse) if child.children else child.name}:'
-                           f'{child.distance_to_father},')
-            result = result[:-1] + ')'
+                result += (f'{cls.subtree_to_newick(child, reverse, with_internal_nodes) if child.children else child.name}:'
+                           f'{child.distance_to_father:.6f},')
+            result = f'{result[:-1]}){node.name if with_internal_nodes else ""}'
         else:
-            result = f'{node.name}:{node.distance_to_father}'
+            result = f'{node.name}:{node.distance_to_father:.6f}'
         return result
 
     @classmethod
     def get_name(cls, node: Optional['Node'], is_full_name: bool = False) -> str:
         return (f'{cls.subtree_to_newick(node) if node.children and is_full_name else node.name}:'
-                f'{node.distance_to_father:.5f}')
+                f'{node.distance_to_father:.6f}')
 
     def add_child(self, child: Optional['Node'], distance_to_father: float) -> NoReturn:
         self.children.append(child)
