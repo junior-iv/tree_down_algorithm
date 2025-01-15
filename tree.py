@@ -362,29 +362,42 @@ class Tree:
 
         return newick_tree
 
-    @staticmethod
-    def tree_to_csv(newick_tree: Union[str, 'Tree'], file_name: str = 'file.csv', sep: str = '\t', sort_values_by:
-                    Optional[List[str]] = None, decimal_length: int = 8) -> NoReturn:
-        if isinstance(newick_tree, str):
-            newick_tree = Tree(newick_tree)
-
-        sort_values_by = sort_values_by if sort_values_by else ['child', 'Name']
-        nodes_info = newick_tree.get_list_nodes_info(False, True)
+    def tree_to_table(self, sort_values_by: Optional[List[str]] = None, decimal_length: int = 8, columns: Optional[
+                      Dict[str, str]] = None) -> pd.DataFrame:
+        nodes_info = self.get_list_nodes_info(False, True)
+        columns = columns if columns else {'node': 'Name', 'father_name': 'Parent', 'distance': 'Distance to father',
+                                           'children': 'child', 'lavel': 'Lavel', 'node_type': 'Node type',
+                                           'full_distance': 'Full distance', 'up_vector': 'Up', 'down_vector': 'Down',
+                                           'likelihood': 'Likelihood'}
         for node_info in nodes_info:
-            for i in ('lavel', 'node_type', 'full_distance', 'up_vector', 'down_vector', 'likelihood'):
+            for i in set(node_info.keys()) - set(columns.keys()):
                 node_info.pop(i)
             if not node_info.get('father_name'):
                 node_info.update({'father_name': 'root'})
-            node_info.update({'distance': ' ' * (decimal_length // 2) if not node_info.get('distance') else
-                             f'{str(node_info.pop("distance")).ljust(decimal_length, "0")}'})
-            node_info.update({'children': ' '.join(node_info.get('children'))})
+            if columns.get('distance'):
+                node_info.update({'distance': ' ' * (decimal_length // 2) if not node_info.get('distance') else
+                                 f'{str(node_info.pop("distance")).ljust(decimal_length, "0")}'})
+            for i in ('children', 'full_distance', 'up_vector', 'down_vector'):
+                if columns.get(i):
+                    node_info.update({i: ' '.join(map(str, node_info.get(i)))})
 
         tree_table = pd.DataFrame([i for i in nodes_info], index=None)
-        tree_table = tree_table.rename(columns={'node': 'Name', 'distance': 'Distance to father', 'father_name':
-                                       'Parent', 'children': 'child'})
-        tree_table = tree_table.reindex(columns=['Name', 'Parent', 'Distance to father', 'child'])
-        tree_table = tree_table.sort_values(by=sort_values_by)
-        tree_table.to_csv(file_name, index=False, sep=sep)
+        tree_table = tree_table.rename(columns=columns)
+        tree_table = tree_table.reindex(columns=columns.values())
+
+        return tree_table.sort_values(by=sort_values_by) if sort_values_by else tree_table
+
+    @staticmethod
+    def tree_to_csv(newick_tree: Union[str, 'Tree'], file_name: str = 'file.csv', sep: str = '\t', sort_values_by:
+                    Optional[List[str]] = None, decimal_length: int = 8, columns: Optional[Dict[str, str]] = None
+                    ) -> NoReturn:
+        if isinstance(newick_tree, str):
+            newick_tree = Tree(newick_tree)
+
+        columns = columns if columns else {'node': 'Name', 'father_name': 'Parent', 'distance': 'Distance to father',
+                                           'children': 'child'}
+        table = newick_tree.tree_to_table(sort_values_by, decimal_length, columns)
+        table.to_csv(file_name, index=False, sep=sep)
 
     @staticmethod
     def tree_to_newick_file(newick_tree: Union[str, 'Tree'], file_name: str = 'tree_file.tree', with_internal_nodes:

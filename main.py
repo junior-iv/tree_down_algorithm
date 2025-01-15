@@ -62,21 +62,22 @@ from tree import Tree
 
 
 if __name__ == '__main__':
-    newick_text = '((S1: 0.3, S2: 0.15):0.1,S3:0.4);'
+    newick_text_1 = '((S1: 0.3, S2: 0.15):0.1,S3:0.4);'
+    newick_text_2 = '((S1: 0.3, S2: 0.15):0.1,(S3:0.16,(S4:0.11,S5:0.73):0.9):0.4,S6:0.14);'
+    newick_text_3 = '((S1:0.3,S2:0.15):0.1,(S3:0.16,(S4:0.11,S5:0.73):0.9):0.4);'
 
-    # pattern_msa = '010'
+    pattern = '101'
     pattern_msa = '>S1\n0\n>S2\n1\n>S3\n0'
-    newick_tree = Tree.rename_nodes(newick_text)
+    newick_tree_1 = Tree.rename_nodes(newick_text_1)
 
-    sf.calculate_tree_likelihood(newick_tree, pattern_msa, 'down', 'S2')
+    sf.calculate_tree_likelihood(newick_tree_1, pattern_msa, 'down', 'S2')
+    sf.print_tree_vectors(newick_tree_1, pattern)
 
-    newick_text = '((S1: 0.3, S2: 0.15):0.1,(S3:0.16,(S4:0.11,S5:0.73):0.9):0.4,S6:0.14);'
-    newick_tree = Tree.rename_nodes(newick_text)
-    Tree.tree_to_csv(newick_tree, 'result_files/tree.csv', '\t', None)
+    newick_tree_2 = Tree.rename_nodes(newick_text_2)
+    Tree.tree_to_csv(newick_tree_2, 'result_files/tree.csv', '\t', ['child', 'Name'])
 
-    newick_text = f'((S1:0.3,S2:0.15):0.1,(S3:0.16,(S4:0.11,S5:0.73):0.9):0.4);'
-    newick_tree = Tree.rename_nodes(newick_text)
-    Tree.tree_to_newick_file(newick_tree, 'result_files/newick_tree.tree', True)
+    newick_tree_3 = Tree.rename_nodes(newick_text_3)
+    Tree.tree_to_newick_file(newick_tree_3, 'result_files/newick_tree.tree', True)
 
     # newick_text = (f'((S1:0.300000,S2:0.150000)N2:0.100000,(S3:0.160000,(S4:0.110000,S5:0.730000)N4'
     #                f':0.900000)N3:0.400000)N1;')
