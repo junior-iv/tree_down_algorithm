@@ -135,17 +135,21 @@ class Node:
         return bool(permission)
 
     @classmethod
-    def subtree_to_newick(cls, node: Optional['Node'], reverse: bool = False, with_internal_nodes: bool = False) -> str:
+    def subtree_to_newick(cls, node: Optional['Node'], reverse: bool = False, with_internal_nodes: bool = False,
+                          decimal_length: int = 0) -> str:
         """This method is for internal use only."""
         node_list = node.children[::-1] if reverse else node.children
         if node_list:
             result = '('
             for child in node_list:
-                result += (f'{cls.subtree_to_newick(child, reverse, with_internal_nodes) if child.children else child.name}:'
-                           f'{child.distance_to_father:.6f},')
+                if child.children:
+                    child_name = cls.subtree_to_newick(child, reverse, with_internal_nodes, decimal_length)
+                else:
+                    child_name = child.name
+                result += f'{child_name}:{str(child.distance_to_father).ljust(decimal_length, "0")},'
             result = f'{result[:-1]}){node.name if with_internal_nodes else ""}'
         else:
-            result = f'{node.name}:{node.distance_to_father:.6f}'
+            result = f'{node.name}:{str(node.distance_to_father).ljust(decimal_length, "0")}'
         return result
 
     @classmethod

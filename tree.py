@@ -364,7 +364,7 @@ class Tree:
 
     @staticmethod
     def tree_to_csv(newick_tree: Union[str, 'Tree'], file_name: str = 'file.csv', sep: str = '\t', sort_values_by:
-                    Optional[List[str]] = None) -> NoReturn:
+                    Optional[List[str]] = None, decimal_length: int = 8) -> NoReturn:
         if isinstance(newick_tree, str):
             newick_tree = Tree(newick_tree)
 
@@ -375,8 +375,8 @@ class Tree:
                 node_info.pop(i)
             if not node_info.get('father_name'):
                 node_info.update({'father_name': 'root'})
-            node_info.update({'distance': '    ' if not node_info.get('distance') else
-                             f'{node_info.pop("distance"):.6f}'})
+            node_info.update({'distance': ' ' * (decimal_length // 2) if not node_info.get('distance') else
+                             f'{str(node_info.pop("distance")).ljust(decimal_length, "0")}'})
             node_info.update({'children': ' '.join(node_info.get('children'))})
 
         tree_table = pd.DataFrame([i for i in nodes_info], index=None)
@@ -388,10 +388,10 @@ class Tree:
 
     @staticmethod
     def tree_to_newick_file(newick_tree: Union[str, 'Tree'], file_name: str = 'tree_file.tree', with_internal_nodes:
-                            bool = False) -> NoReturn:
+                            bool = False, decimal_length: int = 8) -> NoReturn:
         if isinstance(newick_tree, str):
             newick_tree = Tree(newick_tree)
-        newick_text = f'{Node.subtree_to_newick(newick_tree.root, False, with_internal_nodes)};'
+        newick_text = f'{Node.subtree_to_newick(newick_tree.root, False, with_internal_nodes, decimal_length)};'
         with open(file_name, 'w') as f:
             f.write(newick_text)
 
