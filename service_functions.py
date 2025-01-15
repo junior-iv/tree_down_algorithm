@@ -2,7 +2,6 @@ from math import log
 from typing import List, Union, Tuple, Optional, Dict, Set
 from tree import Tree, Node
 import numpy as np
-from scipy.linalg import expm
 import pandas as pd
 
 

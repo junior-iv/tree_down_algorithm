@@ -396,8 +396,8 @@ class Tree:
             f.write(newick_text)
 
     @classmethod
-    def calculate_up(cls, newick_node: Node, nodes_dict: Dict[str, Tuple[int, ...]], alphabet: Tuple[str, ...]) -> Union[
-                                                         Tuple[Union[List[np.ndarray], List[float]], float], float]:
+    def calculate_up(cls, newick_node: Node, nodes_dict: Dict[str, Tuple[int, ...]], alphabet: Tuple[str, ...]
+                     ) -> Union[Tuple[Union[List[np.ndarray], List[float]], float], float]:
         alphabet_size = len(alphabet)
         if not newick_node.children:
             newick_node.up_vector = list(nodes_dict.get(newick_node.name))
