@@ -1,8 +1,8 @@
 from node import Node
-from typing import Optional, List, Union, Dict, NoReturn
+from typing import Optional, List, Union, Dict, NoReturn, Tuple
 import numpy as np
 import pandas as pd
-# import os
+from scipy.linalg import expm
 
 
 class Tree:
@@ -395,3 +395,70 @@ class Tree:
         with open(file_name, 'w') as f:
             f.write(newick_text)
 
+    @classmethod
+    def calculate_up(cls, newick_node: Node, nodes_dict: Dict[str, Tuple[int, ...]], alphabet: Tuple[str, ...]) -> Union[
+                                                         Tuple[Union[List[np.ndarray], List[float]], float], float]:
+        alphabet_size = len(alphabet)
+        if not newick_node.children:
+            newick_node.up_vector = list(nodes_dict.get(newick_node.name))
+            newick_node.likelihood = np.sum([1 / alphabet_size * i for i in newick_node.up_vector])
+            return newick_node.up_vector, newick_node.distance_to_father
+
+        l_vect, l_dist = cls.calculate_up(newick_node.children[0], nodes_dict, alphabet)
+        r_vect, r_dist = cls.calculate_up(newick_node.children[1], nodes_dict, alphabet)
+
+        l_qmatrix = cls.get_jukes_cantor_qmatrix(l_dist, alphabet_size)
+        r_qmatrix = cls.get_jukes_cantor_qmatrix(r_dist, alphabet_size)
+
+        newick_node.up_vector = []
+        for j in range(alphabet_size):
+            freq_l = freq_r = 0
+            for i in range(alphabet_size):
+                freq_l += l_qmatrix[i, j] * l_vect[i]
+                freq_r += r_qmatrix[i, j] * r_vect[i]
+            newick_node.up_vector.append(freq_l * freq_r)
+
+        nodes_dict.update({newick_node.name: newick_node.up_vector})
+
+        newick_node.likelihood = np.sum([1 / alphabet_size * i for i in newick_node.up_vector])
+
+        if newick_node.father:
+            return newick_node.up_vector, newick_node.distance_to_father
+        else:
+            return newick_node.likelihood
+
+    @classmethod
+    def calculate_down(cls, newick_node: Node, tree_info: pd.Series, alphabet_size: int) -> None:
+        father = newick_node.father
+        if not father:
+            newick_node.down_vector = [1] * alphabet_size
+            cls.calculate_down(newick_node.children[0], tree_info, alphabet_size)
+            cls.calculate_down(newick_node.children[1], tree_info, alphabet_size)
+            return
+
+        brother_vector = b_qmatrix = None
+        brothers = tuple(set(tree_info.get(father.name).get('children')) - {newick_node.name})
+        if brothers:
+            brother = tree_info.get(brothers[0])
+            brother_vector = brother.get('up_vector')
+            b_qmatrix = cls.get_jukes_cantor_qmatrix(brother.get('distance'), alphabet_size)
+
+        father_vector = father.down_vector
+        f_qmatrix = cls.get_jukes_cantor_qmatrix(father.distance_to_father, alphabet_size)
+        newick_node.down_vector = []
+        for j in range(alphabet_size):
+            freq_b = sum([b_qmatrix[i, j] * brother_vector[i] for i in range(alphabet_size)]) if brother_vector else 1
+            freq_f = sum([f_qmatrix[i, j] * father_vector[i] for i in range(alphabet_size)]) if father.father else 1
+            newick_node.down_vector.append(freq_f * freq_b)
+
+        if newick_node.children:
+            cls.calculate_down(newick_node.children[0], tree_info, alphabet_size)
+            cls.calculate_down(newick_node.children[1], tree_info, alphabet_size)
+
+    @staticmethod
+    def get_jukes_cantor_qmatrix(branch_length: float, alphabet_size: int) -> np.ndarray:
+        qmatrix = np.ones((alphabet_size, alphabet_size))
+        np.fill_diagonal(qmatrix, 1 - alphabet_size)
+        qmatrix = qmatrix * 1 / (alphabet_size - 1)
+
+        return expm(qmatrix * branch_length)
