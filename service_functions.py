@@ -119,7 +119,17 @@ def calculate_tree_likelihood(newick_tree: Union[str, Tree], pattern: Optional[s
             print(f'likelihood: {likelihood}')
 
 
-def print_tree_vectors(newick_tree: Union[str, Tree], pattern: Optional[str] = None) -> None:
+def set_graph(newick_tree: Union[str, Tree], pattern: Optional[str] = None) -> None:
+    if isinstance(newick_tree, str):
+        newick_tree = Tree(newick_tree)
+    pattern_dict = get_pattern_dict(newick_tree, pattern)
+
+    alphabet = get_alphabet_from_dict(pattern_dict)
+    calculate_tree_likelihood_using_up_down_algorithm(alphabet, newick_tree, pattern_dict, 'down')
+    Tree.tree_to_graph(newick_tree, 'result_files/graph')
+
+
+def set_vectors(newick_tree: Union[str, Tree], pattern: Optional[str] = None) -> None:
     if isinstance(newick_tree, str):
         newick_tree = Tree(newick_tree)
     pattern_dict = get_pattern_dict(newick_tree, pattern)
@@ -127,5 +137,6 @@ def print_tree_vectors(newick_tree: Union[str, Tree], pattern: Optional[str] = N
     alphabet = get_alphabet_from_dict(pattern_dict)
     calculate_tree_likelihood_using_up_down_algorithm(alphabet, newick_tree, pattern_dict, 'down')
     columns = {'node': 'Name', 'up_vector': 'Up', 'down_vector': 'Down'}
-    print(newick_tree.tree_to_table(None, 0, columns))
+    # print(newick_tree.tree_to_table(None, 0, columns))
     Tree.tree_to_csv(newick_tree, 'result_files/up_down_tree.csv', '\t', None, 0, columns)
+

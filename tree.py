@@ -1,14 +1,17 @@
 from node import Node
-from typing import Optional, List, Union, Dict, NoReturn, Tuple
+from typing import Optional, List, Union, Dict, Tuple
 import numpy as np
 import pandas as pd
 from scipy.linalg import expm
+import networkx as nx
+import matplotlib.pyplot as plt
+from Bio import Phylo
 
 
 class Tree:
     root: Optional[Node]
 
-    def __init__(self, data: Union[str, Node, None] = None) -> NoReturn:
+    def __init__(self, data: Union[str, Node, None] = None) -> None:
         if isinstance(data, str):
             self.newick_to_tree(data)
         elif isinstance(data, Node):
@@ -41,7 +44,7 @@ class Tree:
         return self > other or self == other or len(str(self)) > len(str(other))
 
     def print_node_list(self, reverse: bool = False, with_additional_details: bool = False, mode: Optional[str] = None,
-                        filters: Optional[Dict[str, List[Union[float, int, str, List[float]]]]] = None) -> NoReturn:
+                        filters: Optional[Dict[str, List[Union[float, int, str, List[float]]]]] = None) -> None:
         """
         Print a list of nodes.
 
@@ -87,7 +90,7 @@ class Tree:
         """
         return len(self.get_list_nodes_info(False, True, None, filters))
 
-    def get_node_by_name(self, name: str) -> NoReturn:
+    def get_node_by_name(self, name: str) -> None:
         result = None
 
         def get_node(newick_node: Node, node_name: str):
@@ -211,8 +214,8 @@ class Tree:
         """This method is for internal use only."""
         return self.subtree_to_structure(self.root, reverse)
 
-    def add_distance_to_father(self, distance_to_father: float = 0) -> NoReturn:
-        def add_distance(newick_node: Node) -> NoReturn:
+    def add_distance_to_father(self, distance_to_father: float = 0) -> None:
+        def add_distance(newick_node: Node) -> None:
             nonlocal distance_to_father
             newick_node.distance_to_father += distance_to_father
             newick_node.distance_to_father = round(newick_node.distance_to_father, 12)
@@ -224,7 +227,7 @@ class Tree:
     def get_edges_list(self, reverse: bool = False) -> List[str]:
         list_result = []
 
-        def get_list(newick_node: Node) -> NoReturn:
+        def get_list(newick_node: Node) -> None:
             nonlocal list_result
             if newick_node.father:
                 list_result.append((newick_node.father.name, newick_node.name))
@@ -232,6 +235,7 @@ class Tree:
                 get_list(child)
 
         get_list(self.root)
+
         return list_result
 
     @classmethod
@@ -293,7 +297,7 @@ class Tree:
                     return newick_node
         return None
 
-    def __set_children_list_from_string(self, str_children: str, father: Optional[Node], num) -> NoReturn:
+    def __set_children_list_from_string(self, str_children: str, father: Optional[Node], num) -> None:
         """This method is for internal use only."""
         str_children = str_children[1:-1] if str_children.startswith('(') and str_children.endswith(
             ')') else str_children
@@ -390,7 +394,7 @@ class Tree:
     @staticmethod
     def tree_to_csv(newick_tree: Union[str, 'Tree'], file_name: str = 'file.csv', sep: str = '\t', sort_values_by:
                     Optional[List[str]] = None, decimal_length: int = 8, columns: Optional[Dict[str, str]] = None
-                    ) -> NoReturn:
+                    ) -> None:
         if isinstance(newick_tree, str):
             newick_tree = Tree(newick_tree)
 
@@ -401,12 +405,54 @@ class Tree:
 
     @staticmethod
     def tree_to_newick_file(newick_tree: Union[str, 'Tree'], file_name: str = 'tree_file.tree', with_internal_nodes:
-                            bool = False, decimal_length: int = 8) -> NoReturn:
+                            bool = False, decimal_length: int = 8, save_phylogenetic_tree: bool = False) -> None:
         if isinstance(newick_tree, str):
             newick_tree = Tree(newick_tree)
         newick_text = f'{Node.subtree_to_newick(newick_tree.root, False, with_internal_nodes, decimal_length)};'
         with open(file_name, 'w') as f:
             f.write(newick_text)
+        if save_phylogenetic_tree:
+            phylogenetic_tree = Phylo.read(file_name, 'newick')
+            j = file_name[::-1].find('.')
+            if j > -1:
+                file_name = f'{file_name[:j]}_visual.txt'
+            with open(file_name, 'w') as f:
+                Phylo.draw_ascii(phylogenetic_tree, f)
+            print(Phylo.draw(phylogenetic_tree))
+
+    # @staticmethod
+    # def tree_to_phylogenetic_tree(newick_tree: Union[str, 'Tree'], file_name: str = 'tree_file.tree', with_internal_nodes:
+    #                         bool = False, decimal_length: int = 8) -> None:
+    #     if isinstance(newick_tree, str):
+    #         newick_tree = Tree(newick_tree)
+    #     phylogenetic_tree = Phylo.read(file_name, "newick")
+    #     Phylo.draw(phylogenetic_tree)
+    #
+    @staticmethod
+    def tree_to_graph(newick_tree: Union[str, 'Tree'], file_name: str = 'graph', file_extension: Optional[Union[str,
+                      List[str]]] = None) -> None:
+        file_extension = file_extension if file_extension else ['png', 'dot']
+        if isinstance(file_extension, str):
+            file_extension = [file_extension]
+        if file_name[-3:] in file_extension:
+            file_name, file_extension = file_name[:-4], [file_name[-3:]]
+        if isinstance(newick_tree, str):
+            newick_tree = Tree(newick_tree)
+
+        columns = {'node': 'Name', 'father_name': 'Parent', 'distance': 'Distance to father'}
+        table = newick_tree.tree_to_table(None, 0, columns)
+        if 'png' in file_extension:
+            graph = nx.Graph()
+            for row in table.values:
+                graph.add_edge(row[1], row[0], weight=(1-float(row[2]) if row[2] else 1))
+            nx.draw(graph, with_labels=True, font_color='Maroon', node_color='Gold', node_size=1000,
+                    font_weight='bold')
+            plt.savefig(f'{file_name}.png')
+        if 'dot' in file_extension:
+            graph = nx.Graph()
+            for row in table.values:
+                graph.add_edge(row[1], row[0], weight=(float(row[2]) if row[2] else 0))
+            nx.drawing.nx_pydot.write_dot(graph, f'{file_name}.dot')
 
     @classmethod
     def calculate_up(cls, newick_node: Node, nodes_dict: Dict[str, Tuple[int, ...]], alphabet: Tuple[str, ...]
@@ -443,28 +489,28 @@ class Tree:
     @classmethod
     def calculate_down(cls, newick_node: Node, tree_info: pd.Series, alphabet_size: int) -> None:
         father = newick_node.father
-        if not father:
+        if father:
+            brother_vector = b_qmatrix = None
+            brothers = tuple(set(tree_info.get(father.name).get('children')) - {newick_node.name})
+            if brothers:
+                brother = tree_info.get(brothers[0])
+                brother_vector = brother.get('up_vector')
+                b_qmatrix = cls.get_jukes_cantor_qmatrix(brother.get('distance'), alphabet_size)
+
+            father_vector = father.down_vector
+            f_qmatrix = cls.get_jukes_cantor_qmatrix(father.distance_to_father, alphabet_size)
+            newick_node.down_vector = []
+            for j in range(alphabet_size):
+                freq_b = sum(
+                    [b_qmatrix[i, j] * brother_vector[i] for i in range(alphabet_size)]) if brother_vector else 1
+                freq_f = sum([f_qmatrix[i, j] * father_vector[i] for i in range(alphabet_size)]) if father.father else 1
+                newick_node.down_vector.append(freq_f * freq_b)
+
+            if newick_node.children:
+                cls.calculate_down(newick_node.children[0], tree_info, alphabet_size)
+                cls.calculate_down(newick_node.children[1], tree_info, alphabet_size)
+        else:
             newick_node.down_vector = [1] * alphabet_size
-            cls.calculate_down(newick_node.children[0], tree_info, alphabet_size)
-            cls.calculate_down(newick_node.children[1], tree_info, alphabet_size)
-            return
-
-        brother_vector = b_qmatrix = None
-        brothers = tuple(set(tree_info.get(father.name).get('children')) - {newick_node.name})
-        if brothers:
-            brother = tree_info.get(brothers[0])
-            brother_vector = brother.get('up_vector')
-            b_qmatrix = cls.get_jukes_cantor_qmatrix(brother.get('distance'), alphabet_size)
-
-        father_vector = father.down_vector
-        f_qmatrix = cls.get_jukes_cantor_qmatrix(father.distance_to_father, alphabet_size)
-        newick_node.down_vector = []
-        for j in range(alphabet_size):
-            freq_b = sum([b_qmatrix[i, j] * brother_vector[i] for i in range(alphabet_size)]) if brother_vector else 1
-            freq_f = sum([f_qmatrix[i, j] * father_vector[i] for i in range(alphabet_size)]) if father.father else 1
-            newick_node.down_vector.append(freq_f * freq_b)
-
-        if newick_node.children:
             cls.calculate_down(newick_node.children[0], tree_info, alphabet_size)
             cls.calculate_down(newick_node.children[1], tree_info, alphabet_size)
 

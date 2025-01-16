@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Union, List, NoReturn
+from typing import Optional, Dict, Union, List
 import numpy as np
 # from collections import deque
 
@@ -12,7 +12,7 @@ class Node:
     down_vector: List[Union[float, np.ndarray]]
     likelihood: Union[float, np.ndarray]
 
-    def __init__(self, name: Optional[str]) -> NoReturn:
+    def __init__(self, name: Optional[str]) -> None:
         self.father = None
         self.children = []
         self.name = name
@@ -56,7 +56,7 @@ class Node:
                                                                    ) else mode.lower()
         condition = with_additional_details or only_node_list
 
-        def get_list(trees_node: Node) -> NoReturn:
+        def get_list(trees_node: Node) -> None:
             nonlocal list_result, reverse, filters, mode, condition
 
             nodes_info = trees_node.get_nodes_info()
@@ -157,7 +157,7 @@ class Node:
         return (f'{cls.subtree_to_newick(node) if node.children and is_full_name else node.name}:'
                 f'{node.distance_to_father:.6f}')
 
-    def add_child(self, child: Optional['Node'], distance_to_father: float) -> NoReturn:
+    def add_child(self, child: Optional['Node'], distance_to_father: float) -> None:
         self.children.append(child)
         child.father = self
         child.distance_to_father = distance_to_father
@@ -181,3 +181,4 @@ class Node:
                 break
             father = father.father
         return sum([i['distance'] for i in list_result])
+
