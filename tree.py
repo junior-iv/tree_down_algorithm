@@ -1,3 +1,5 @@
+import os
+
 from node import Node
 from typing import Optional, List, Union, Dict, Tuple
 import numpy as np
@@ -6,6 +8,7 @@ from scipy.linalg import expm
 import networkx as nx
 import matplotlib.pyplot as plt
 from Bio import Phylo
+import pylab
 
 
 class Tree:
@@ -366,9 +369,10 @@ class Tree:
 
         return newick_tree
 
-    def tree_to_table(self, sort_values_by: Optional[List[str]] = None, decimal_length: int = 8, columns: Optional[
-                      Dict[str, str]] = None) -> pd.DataFrame:
-        nodes_info = self.get_list_nodes_info(False, True)
+    def tree_to_table(self, sort_values_by: Optional[Tuple[str, ...]] = None, decimal_length: int = 8, columns: Optional
+                      [Dict[str, str]] = None, filters: Optional[Dict[str, List[Union[float, int, str, List[float]]]]] =
+                      None) -> pd.DataFrame:
+        nodes_info = self.get_list_nodes_info(False, True, None, filters)
         columns = columns if columns else {'node': 'Name', 'father_name': 'Parent', 'distance': 'Distance to father',
                                            'children': 'child', 'lavel': 'Lavel', 'node_type': 'Node type',
                                            'full_distance': 'Full distance', 'up_vector': 'Up', 'down_vector': 'Down',
@@ -389,70 +393,78 @@ class Tree:
         tree_table = tree_table.rename(columns=columns)
         tree_table = tree_table.reindex(columns=columns.values())
 
-        return tree_table.sort_values(by=sort_values_by) if sort_values_by else tree_table
+        return tree_table.sort_values(by=list(sort_values_by)) if sort_values_by else tree_table
 
     @staticmethod
     def tree_to_csv(newick_tree: Union[str, 'Tree'], file_name: str = 'file.csv', sep: str = '\t', sort_values_by:
-                    Optional[List[str]] = None, decimal_length: int = 8, columns: Optional[Dict[str, str]] = None
-                    ) -> None:
+                    Optional[Tuple[str, ...]] = None, decimal_length: int = 8, columns: Optional[Dict[str, str]] = None,
+                    filters: Optional[Dict[str, List[Union[float, int, str, List[float]]]]] = None) -> None:
         if isinstance(newick_tree, str):
             newick_tree = Tree(newick_tree)
 
         columns = columns if columns else {'node': 'Name', 'father_name': 'Parent', 'distance': 'Distance to father',
                                            'children': 'child'}
-        table = newick_tree.tree_to_table(sort_values_by, decimal_length, columns)
+        table = newick_tree.tree_to_table(sort_values_by, decimal_length, columns, filters)
         table.to_csv(file_name, index=False, sep=sep)
 
     @staticmethod
     def tree_to_newick_file(newick_tree: Union[str, 'Tree'], file_name: str = 'tree_file.tree', with_internal_nodes:
-                            bool = False, decimal_length: int = 8, save_phylogenetic_tree: bool = False) -> None:
+                            bool = False, decimal_length: int = 8) -> None:
         if isinstance(newick_tree, str):
             newick_tree = Tree(newick_tree)
         newick_text = f'{Node.subtree_to_newick(newick_tree.root, False, with_internal_nodes, decimal_length)};'
         with open(file_name, 'w') as f:
             f.write(newick_text)
-        if save_phylogenetic_tree:
-            phylogenetic_tree = Phylo.read(file_name, 'newick')
-            j = file_name[::-1].find('.')
-            if j > -1:
-                file_name = f'{file_name[:j]}_visual.txt'
-            with open(file_name, 'w') as f:
-                Phylo.draw_ascii(phylogenetic_tree, f)
-            print(Phylo.draw(phylogenetic_tree))
 
-    # @staticmethod
-    # def tree_to_phylogenetic_tree(newick_tree: Union[str, 'Tree'], file_name: str = 'tree_file.tree', with_internal_nodes:
-    #                         bool = False, decimal_length: int = 8) -> None:
-    #     if isinstance(newick_tree, str):
-    #         newick_tree = Tree(newick_tree)
-    #     phylogenetic_tree = Phylo.read(file_name, "newick")
-    #     Phylo.draw(phylogenetic_tree)
-    #
     @staticmethod
-    def tree_to_graph(newick_tree: Union[str, 'Tree'], file_name: str = 'graph', file_extension: Optional[Union[str,
-                      List[str]]] = None) -> None:
-        file_extension = file_extension if file_extension else ['png', 'dot']
-        if isinstance(file_extension, str):
-            file_extension = [file_extension]
-        if file_name[-3:] in file_extension:
-            file_name, file_extension = file_name[:-4], [file_name[-3:]]
+    def tree_to_visual_format(newick_tree: Union[str, 'Tree'], file_name: str = 'tree_file.svg', file_extensions:
+                              Optional[Union[str, Tuple[str, ...]]] = None) -> None:
+        file_extensions = file_extensions if file_extensions else ('svg',)
+        if isinstance(file_extensions, str):
+            file_extensions = (file_extensions,)
+
+        tmp_file = 'result_files/tmp_tree.tree'
+        Tree.tree_to_newick_file(newick_tree, tmp_file)
+        phylogenetic_tree = Phylo.read(tmp_file, 'newick')
+        j = file_name[::-1].find('.')
+        for file_extension in file_extensions:
+            file_name = f'{file_name[:-(j + 1)]}.{file_extension}' if len(file_name) > j > -1 else (f'{file_name}.'
+                                                                                                    f'{file_extension}')
+            if file_extension == 'txt':
+                with open(file_name, 'w') as f:
+                    Phylo.draw_ascii(phylogenetic_tree, f)
+            else:
+                Phylo.draw(phylogenetic_tree, do_show=False)
+                pylab.axis('off')
+                kwargs = {'format': file_extension, 'bbox_inches': 'tight', 'dpi': 300} if (
+                        file_extension == 'svg') else {'format': file_extension}
+                pylab.savefig(file_name, **kwargs)
+        os.remove(tmp_file)
+
+    @staticmethod
+    def tree_to_graph(newick_tree: Union[str, 'Tree'], file_name: str = 'graph', file_extensions: Optional[Union[str,
+                      Tuple[str, ...]]] = None) -> None:
+        file_extensions = file_extensions if file_extensions else ('png',)
+        if isinstance(file_extensions, str):
+            file_extensions = (file_extensions,)
         if isinstance(newick_tree, str):
             newick_tree = Tree(newick_tree)
 
         columns = {'node': 'Name', 'father_name': 'Parent', 'distance': 'Distance to father'}
         table = newick_tree.tree_to_table(None, 0, columns)
-        if 'png' in file_extension:
+        j = file_name[::-1].find('.')
+        for file_extension in file_extensions:
+            file_name = f'{file_name[:-(j + 1)]}.{file_extension}' if len(file_name) > j > -1 else (f'{file_name}.'
+                                                                                                    f'{file_extension}')
             graph = nx.Graph()
             for row in table.values:
-                graph.add_edge(row[1], row[0], weight=(1-float(row[2]) if row[2] else 1))
-            nx.draw(graph, with_labels=True, font_color='Maroon', node_color='Gold', node_size=1000,
-                    font_weight='bold')
-            plt.savefig(f'{file_name}.png')
-        if 'dot' in file_extension:
-            graph = nx.Graph()
-            for row in table.values:
-                graph.add_edge(row[1], row[0], weight=(float(row[2]) if row[2] else 0))
-            nx.drawing.nx_pydot.write_dot(graph, f'{file_name}.dot')
+                graph.add_edge(row[1], row[0], length=(float(row[2]) if row[2] else 1))
+            if 'png' in file_extension:
+                nx.draw(graph, with_labels=True, font_color='Maroon', node_color='Gold', node_size=1000,
+                        font_weight='bold')
+                plt.savefig(file_name)
+            if 'dot' in file_extension:
+                nx.drawing.nx_pydot.write_dot(graph, file_name)
 
     @classmethod
     def calculate_up(cls, newick_node: Node, nodes_dict: Dict[str, Tuple[int, ...]], alphabet: Tuple[str, ...]

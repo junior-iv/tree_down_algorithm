@@ -82,9 +82,6 @@ class Node:
 
         if mode == 'level-order':
             nodes_list = [self]
-            # queue = deque([self])
-            # while queue:
-            #     newick_node = queue.popleft()
             while nodes_list:
                 newick_node = nodes_list.pop(0)
                 if newick_node.check_filter_compliance(filters, newick_node.get_nodes_info()):
@@ -181,4 +178,3 @@ class Node:
                 break
             father = father.father
         return sum([i['distance'] for i in list_result])
-
