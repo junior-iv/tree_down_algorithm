@@ -480,11 +480,11 @@ class Tree:
 
         newick_node.up_vector = []
         for j in range(alphabet_size):
-            freq_l = freq_r = 0
+            prob_l = prob_r = 0
             for i in range(alphabet_size):
-                freq_l += l_qmatrix[i, j] * l_vect[i]
-                freq_r += r_qmatrix[i, j] * r_vect[i]
-            newick_node.up_vector.append(freq_l * freq_r)
+                prob_l += l_qmatrix[j, i] * l_vect[i]
+                prob_r += r_qmatrix[j, i] * r_vect[i]
+            newick_node.up_vector.append(prob_l * prob_r)
 
         nodes_dict.update({newick_node.name: newick_node.up_vector})
 
@@ -510,10 +510,10 @@ class Tree:
             f_qmatrix = cls.get_jukes_cantor_qmatrix(father.distance_to_father, alphabet_size)
             newick_node.down_vector = []
             for j in range(alphabet_size):
-                freq_b = sum(
+                prob_b = sum(
                     [b_qmatrix[i, j] * brother_vector[i] for i in range(alphabet_size)]) if brother_vector else 1
-                freq_f = sum([f_qmatrix[i, j] * father_vector[i] for i in range(alphabet_size)]) if father.father else 1
-                newick_node.down_vector.append(freq_f * freq_b)
+                prob_f = sum([f_qmatrix[i, j] * father_vector[i] for i in range(alphabet_size)]) if father.father else 1
+                newick_node.down_vector.append(prob_f * prob_b)
 
             if newick_node.children:
                 cls.calculate_down(newick_node.children[0], tree_info, alphabet_size)
