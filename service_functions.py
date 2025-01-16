@@ -49,10 +49,10 @@ def calculate_tree_likelihood_using_up_down_algorithm(alphabet: Tuple[str, ...],
         nodes_dict = dict()
         for i in range(len(leaves_info)):
             node_name = leaves_info[i].get('node')
-            sequence = pattern_msa_dict.get(node_name)[i_char]
-            frequency = [0] * alphabet_size
-            frequency[alphabet.index(sequence)] = 1
-            nodes_dict.update({node_name: tuple(frequency)})
+            character = pattern_msa_dict.get(node_name)[i_char]
+            vector = [0] * alphabet_size
+            vector[alphabet.index(character)] = 1
+            nodes_dict.update({node_name: tuple(vector)})
 
         char_likelihood = Tree.calculate_up(newick_node, nodes_dict, alphabet)
         likelihood *= char_likelihood

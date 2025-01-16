@@ -1,6 +1,6 @@
 from tree import Tree
 import service_functions as sf
-
+import os
 if __name__ == '__main__':
 
     newick_text_1 = '((S1: 0.3, S2: 0.15):0.1,S3:0.4);'
@@ -25,3 +25,7 @@ if __name__ == '__main__':
     Tree.tree_to_csv(newick_tree_2, 'result_files/up_down_tree.csv', '\t', None, 0, columns, {'node_type': ['node']})
 
     sf.calculate_tree_likelihood(newick_tree_1, pattern_msa, 'down', 'S2')
+    # path = '/'.join('RESULT_DATA_PATH/qwe/asd.zxc'.split('/')[:-1])
+    # if not os.path.exists(path):
+    #     os.makedirs(path)
+

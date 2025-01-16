@@ -354,8 +354,7 @@ class Tree:
     @staticmethod
     def rename_nodes(newick_tree: Union[str, 'Tree'], node_name: str = 'N', fill_character: str = '0', number_length:
                      int = 0) -> 'Tree':
-        if isinstance(newick_tree, str):
-            newick_tree = Tree(newick_tree)
+        newick_tree = Tree.check_tree(newick_tree)
         num = newick_tree.__counter()
 
         nodes_list = [newick_tree.root]
@@ -399,8 +398,8 @@ class Tree:
     def tree_to_csv(newick_tree: Union[str, 'Tree'], file_name: str = 'file.csv', sep: str = '\t', sort_values_by:
                     Optional[Tuple[str, ...]] = None, decimal_length: int = 8, columns: Optional[Dict[str, str]] = None,
                     filters: Optional[Dict[str, List[Union[float, int, str, List[float]]]]] = None) -> None:
-        if isinstance(newick_tree, str):
-            newick_tree = Tree(newick_tree)
+        newick_tree = Tree.check_tree(newick_tree)
+        Tree.make_dir(file_name)
 
         columns = columns if columns else {'node': 'Name', 'father_name': 'Parent', 'distance': 'Distance to father',
                                            'children': 'child'}
@@ -410,8 +409,8 @@ class Tree:
     @staticmethod
     def tree_to_newick_file(newick_tree: Union[str, 'Tree'], file_name: str = 'tree_file.tree', with_internal_nodes:
                             bool = False, decimal_length: int = 8) -> None:
-        if isinstance(newick_tree, str):
-            newick_tree = Tree(newick_tree)
+        newick_tree = Tree.check_tree(newick_tree)
+        Tree.make_dir(file_name)
         newick_text = f'{Node.subtree_to_newick(newick_tree.root, False, with_internal_nodes, decimal_length)};'
         with open(file_name, 'w') as f:
             f.write(newick_text)
@@ -419,11 +418,11 @@ class Tree:
     @staticmethod
     def tree_to_visual_format(newick_tree: Union[str, 'Tree'], file_name: str = 'tree_file.svg', file_extensions:
                               Optional[Union[str, Tuple[str, ...]]] = None) -> None:
-        file_extensions = file_extensions if file_extensions else ('svg',)
-        if isinstance(file_extensions, str):
-            file_extensions = (file_extensions,)
+        file_extensions = Tree.check_file_extensions_tuple(file_extensions, 'svg')
+        Tree.make_dir(file_name)
 
         tmp_file = 'result_files/tmp_tree.tree'
+        Tree.make_dir(tmp_file)
         Tree.tree_to_newick_file(newick_tree, tmp_file)
         phylogenetic_tree = Phylo.read(tmp_file, 'newick')
         j = file_name[::-1].find('.')
@@ -444,11 +443,9 @@ class Tree:
     @staticmethod
     def tree_to_graph(newick_tree: Union[str, 'Tree'], file_name: str = 'graph', file_extensions: Optional[Union[str,
                       Tuple[str, ...]]] = None) -> None:
-        file_extensions = file_extensions if file_extensions else ('png',)
-        if isinstance(file_extensions, str):
-            file_extensions = (file_extensions,)
-        if isinstance(newick_tree, str):
-            newick_tree = Tree(newick_tree)
+        file_extensions = Tree.check_file_extensions_tuple(file_extensions, 'png')
+        newick_tree = Tree.check_tree(newick_tree)
+        Tree.make_dir(file_name)
 
         columns = {'node': 'Name', 'father_name': 'Parent', 'distance': 'Distance to father'}
         table = newick_tree.tree_to_table(None, 0, columns)
@@ -533,3 +530,25 @@ class Tree:
         qmatrix = qmatrix * 1 / (alphabet_size - 1)
 
         return expm(qmatrix * branch_length)
+
+    @staticmethod
+    def make_dir(path: str) -> None:
+        path = '/'.join(path.split('/')[:-1])
+        if not os.path.exists(path):
+            os.makedirs(path)
+
+    @staticmethod
+    def check_tree(newick_tree: Union[str, 'Tree']) -> 'Tree':
+        if isinstance(newick_tree, str):
+            newick_tree = Tree(newick_tree)
+
+        return newick_tree
+
+    @staticmethod
+    def check_file_extensions_tuple(file_extensions: Optional[Union[str, Tuple[str, ...]]] = None, default_value: str =
+                                    'txt') -> Tuple[str, ...]:
+        file_extensions = file_extensions if file_extensions else (default_value,)
+        if isinstance(file_extensions, str):
+            file_extensions = (file_extensions,)
+
+        return file_extensions
