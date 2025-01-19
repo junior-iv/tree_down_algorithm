@@ -1,14 +1,12 @@
 import os
-
-from node import Node
-from typing import Optional, List, Union, Dict, Tuple
 import numpy as np
 import pandas as pd
-from scipy.linalg import expm
 import networkx as nx
 import matplotlib.pyplot as plt
+from node import Node
+from typing import Optional, List, Union, Dict, Tuple
+from scipy.linalg import expm
 from Bio import Phylo
-import pylab
 
 
 class Tree:
@@ -417,13 +415,13 @@ class Tree:
 
     @staticmethod
     def tree_to_visual_format(newick_tree: Union[str, 'Tree'], file_name: str = 'tree_file.svg', file_extensions:
-                              Optional[Union[str, Tuple[str, ...]]] = None) -> None:
+                              Optional[Union[str, Tuple[str, ...]]] = None, with_internal_nodes: bool = False) -> None:
         file_extensions = Tree.check_file_extensions_tuple(file_extensions, 'svg')
         Tree.make_dir(file_name)
 
         tmp_file = 'result_files/tmp_tree.tree'
         Tree.make_dir(tmp_file)
-        Tree.tree_to_newick_file(newick_tree, tmp_file)
+        Tree.tree_to_newick_file(newick_tree, tmp_file, with_internal_nodes)
         phylogenetic_tree = Phylo.read(tmp_file, 'newick')
         j = file_name[::-1].find('.')
         for file_extension in file_extensions:
@@ -434,10 +432,10 @@ class Tree:
                     Phylo.draw_ascii(phylogenetic_tree, f)
             else:
                 Phylo.draw(phylogenetic_tree, do_show=False)
-                pylab.axis('off')
+                plt.axis('off')
                 kwargs = {'format': file_extension, 'bbox_inches': 'tight', 'dpi': 300} if (
                         file_extension == 'svg') else {'format': file_extension}
-                pylab.savefig(file_name, **kwargs)
+                plt.savefig(file_name, **kwargs)
         os.remove(tmp_file)
 
     @staticmethod

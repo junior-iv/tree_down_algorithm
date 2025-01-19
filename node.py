@@ -1,6 +1,5 @@
 from typing import Optional, Dict, Union, List
 import numpy as np
-# from collections import deque
 
 
 class Node:
