@@ -415,7 +415,8 @@ class Tree:
 
     @staticmethod
     def tree_to_visual_format(newick_tree: Union[str, 'Tree'], file_name: str = 'tree_file.svg', file_extensions:
-                              Optional[Union[str, Tuple[str, ...]]] = None, with_internal_nodes: bool = False) -> None:
+                              Optional[Union[str, Tuple[str, ...]]] = None, with_internal_nodes: bool = False,
+                              show_axes: bool = False) -> None:
         file_extensions = Tree.check_file_extensions_tuple(file_extensions, 'svg')
         Tree.make_dir(file_name)
 
@@ -432,7 +433,7 @@ class Tree:
                     Phylo.draw_ascii(phylogenetic_tree, f)
             else:
                 Phylo.draw(phylogenetic_tree, do_show=False)
-                plt.axis('off')
+                plt.axis('on' if show_axes else 'off')
                 kwargs = {'format': file_extension, 'bbox_inches': 'tight', 'dpi': 300} if (
                         file_extension == 'svg') else {'format': file_extension}
                 plt.savefig(file_name, **kwargs)
@@ -453,7 +454,7 @@ class Tree:
                                                                                                     f'{file_extension}')
             graph = nx.Graph()
             for row in table.values:
-                graph.add_edge(row[1], row[0], length=(float(row[2]) if row[2] else 1))
+                graph.add_edge(row[1], row[0], length=(float(row[2]) if row[2] else 0.0))
             if 'png' in file_extension:
                 nx.draw(graph, with_labels=True, font_color='Maroon', node_color='Gold', node_size=1000,
                         font_weight='bold')

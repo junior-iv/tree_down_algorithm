@@ -89,8 +89,7 @@ def calculate_tree_likelihood(newick_tree: Union[str, Tree], pattern: Optional[s
     """
         mode (str): `up` (default), 'up', 'down', 'marginal'.
     """
-    if isinstance(newick_tree, str):
-        newick_tree = Tree(newick_tree)
+    newick_tree = Tree.check_tree(newick_tree)
     pattern_dict = get_pattern_dict(newick_tree, pattern)
 
     alphabet = get_alphabet_from_dict(pattern_dict)

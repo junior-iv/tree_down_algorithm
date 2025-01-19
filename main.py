@@ -16,12 +16,12 @@ if __name__ == '__main__':
     newick_tree_3 = Tree.rename_nodes(newick_text_3)
     Tree.tree_to_graph(newick_tree_3, 'result_files/graph.txt', ('dot', 'png'))
     Tree.tree_to_newick_file(newick_tree_2, 'result_files/newick_tree.tree', True, 8)
-    Tree.tree_to_visual_format(newick_tree_2, 'result_files/newick_tree.svg', ('svg', 'txt', 'png'), True)
+    Tree.tree_to_visual_format(newick_tree_3, 'result_files/newick_tree.svg', ('svg', 'txt', 'png'), True, True)
     Tree.tree_to_csv(newick_tree_2, 'result_files/tree.csv', '\t', ('child', 'Name'))
 
     pattern_dict = sf.get_pattern_dict(newick_tree_2, pattern_2)
     alphabet = sf.get_alphabet_from_dict(pattern_dict)
-    sf.calculate_tree_likelihood_using_up_down_algorithm(alphabet, newick_tree_2, pattern_dict, 'down')
-    Tree.tree_to_csv(newick_tree_2, 'result_files/up_down_tree.csv', '\t', None, 0, columns, {'node_type': ['node']})
+    sf.calculate_tree_likelihood_using_up_down_algorithm(alphabet, newick_tree_3, pattern_dict, 'down')
+    Tree.tree_to_csv(newick_tree_3, 'result_files/up_down_tree.csv', '\t', None, 0, columns, {'node_type': ['node']})
 
     sf.calculate_tree_likelihood(newick_tree_1, pattern_msa, 'down', 'S2')
