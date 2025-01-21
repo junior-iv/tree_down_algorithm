@@ -1,5 +1,4 @@
 from tree import Tree
-import numpy as np
 
 if __name__ == '__main__':
 

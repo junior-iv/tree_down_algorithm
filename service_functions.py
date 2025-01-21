@@ -1,6 +1,6 @@
 from math import log
 from typing import List, Union, Tuple, Optional, Dict
-from tree import Tree, Node
+from tree import Tree
 import pandas as pd
 
 
@@ -26,7 +26,7 @@ def calculate_tree_likelihood_using_up_down_algorithm(alphabet: Union[Tuple[str,
             vector[alphabet.index(character)] = 1
             nodes_dict.update({node_name: tuple(vector)})
 
-        char_likelihood = newick_node.calculate_up(nodes_dict, alphabet_size)
+        char_likelihood = newick_node.calculate_up(nodes_dict, alphabet)
         likelihood *= char_likelihood
         log_likelihood += log(char_likelihood)
         log_likelihood_list.append(log(char_likelihood))

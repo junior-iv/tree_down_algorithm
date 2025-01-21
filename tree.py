@@ -446,21 +446,21 @@ class Tree:
                 nx.drawing.nx_pydot.write_dot(graph, file_name)
 
     @staticmethod
-    def get_alphabet(search_argument: Union[Set[str], int, str]) -> Tuple[str]:
-        alphabets = ({'0', '1'}, {'A', 'C', 'G', 'T'},
-                     {'A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y',
-                      'V'})
+    def get_alphabet(search_argument: Union[Set[str], int, str]) -> Tuple[str, ...]:
+        alphabets = (('0', '1'), ('A', 'C', 'G', 'T'),
+                     ('A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y',
+                      'V'))
         if isinstance(search_argument, int):
             return tuple(alphabets[search_argument])
         if isinstance(search_argument, str):
             search_argument = set([i for i in search_argument])
         if isinstance(search_argument, set):
             for alphabet in alphabets:
-                if not search_argument - alphabet:
-                    return tuple(alphabet)
+                if not search_argument - set(alphabet):
+                    return alphabet
 
     @staticmethod
-    def get_alphabet_from_dict(pattern_msa_dict: Dict[str, str]) -> Tuple[str]:
+    def get_alphabet_from_dict(pattern_msa_dict: Dict[str, str]) -> Tuple[str, ...]:
         character_list = []
         for sequence in pattern_msa_dict.values():
             character_list += [i for i in sequence]
