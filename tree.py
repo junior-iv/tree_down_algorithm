@@ -287,7 +287,7 @@ class Tree:
         if node_name and isinstance(node_name, str):
             Tree.rename_nodes(self, node_name)
         if not newick_node:
-            node_list = self.root.get_list_nodes_info(False, False, None, {'node_type': ['node']}, True)
+            node_list = self.root.get_list_nodes_info(False, False, None, {'node_type': ['node', 'root']}, True)
             if node_list:
                 newick_node = np.random.choice(np.array(node_list))
         else:
