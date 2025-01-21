@@ -38,8 +38,8 @@ if __name__ == '__main__':
     alphabet = Tree.get_alphabet(0)
     print(f'newick_tree_3.calculate_marginal(None, alphabet): '
           f'{newick_tree_3.calculate_marginal(None, alphabet, pattern_3, "N")}')
-    print(f'newick_tree_2.calculate_marginal("N2", alphabet): '
-          f'{newick_tree_3.calculate_marginal("N3", alphabet, pattern_2, "N")}')
+    print(f'newick_tree_3.calculate_marginal("N2", alphabet): '
+          f'{newick_tree_3.calculate_marginal("N3", alphabet, pattern_3, "N")}')
     print(f'newick_tree_3.root.likelihood: {newick_tree_3.root.likelihood}')
     Tree.tree_to_fasta(newick_tree_3, 'result_files/fasta_file.fasta')
 
@@ -48,8 +48,10 @@ if __name__ == '__main__':
     columns1 = {'node': 'Name', 'probable_character': 'Probable Character'}
     Tree.tree_to_csv(newick_tree_3, 'result_files/probable_character.csv', '\t', ('Name',), 0, columns1, node_name='N')
     table = newick_tree_3.get_tree_info()
+    table2 = newick_tree_3.tree_to_table()
 
-    # print(table)
+    print(table)
+    print(table2)
     # print(table.get('N4').get('up_vector'))
     # print('')
     # print('!')

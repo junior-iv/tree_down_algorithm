@@ -11,9 +11,11 @@ from Bio import Phylo
 class Tree:
     root: Optional[Node]
 
-    def __init__(self, data: Union[str, Node, None] = None) -> None:
+    def __init__(self, data: Union[str, Node, None] = None, node_name: Optional[str] = None) -> None:
         if isinstance(data, str):
             self.newick_to_tree(data)
+            if node_name and isinstance(node_name, str):
+                Tree.rename_nodes(self, node_name)
         elif isinstance(data, Node):
             self.root = data
         else:
@@ -257,7 +259,9 @@ class Tree:
         columns = columns if columns else {'node': 'Name', 'father_name': 'Parent', 'distance': 'Distance to father',
                                            'children': 'child', 'lavel': 'Lavel', 'node_type': 'Node type',
                                            'full_distance': 'Full distance', 'up_vector': 'Up', 'down_vector': 'Down',
-                                           'likelihood': 'Likelihood'}
+                                           'likelihood': 'Likelihood', 'marginal_vector': 'Marginal vector',
+                                           'probability_vector': 'Probability vector', 'probable_character':
+                                           'Probable character'}
         for node_info in nodes_info:
             for i in set(node_info.keys()) - set(columns.keys()):
                 node_info.pop(i)
@@ -266,7 +270,7 @@ class Tree:
             if columns.get('distance'):
                 node_info.update({'distance': ' ' * (decimal_length // 2) if not node_info.get('distance') else
                                  f'{str(node_info.pop("distance")).ljust(decimal_length, "0")}'})
-            for i in ('children', 'full_distance', 'up_vector', 'down_vector'):
+            for i in ('children', 'full_distance', 'up_vector', 'down_vector', 'marginal_vector', 'probability_vector'):
                 if columns.get(i):
                     node_info.update({i: ' '.join(map(str, node_info.get(i)))})
 
