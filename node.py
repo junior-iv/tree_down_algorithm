@@ -35,10 +35,10 @@ class Node:
         return ['children', 'distance_to_father', 'father', 'name', 'up_vector', 'down_vector', 'likelihood',
                 'marginal_vector', 'probability_vector', 'probable_character']
 
-    def get_list_nodes_info(self, reverse: bool = False, with_additional_details: bool = False, mode: Optional[
-                        str] = None, filters: Optional[Dict[str, List[Union[float, int, str, List[float]]]]] = None,
-                        only_node_list: bool = False) -> List[Union[Dict[str, Union[float, np.ndarray, bool, str, List[
-                                                         float], List[np.ndarray]]], 'Node']]:
+    def get_list_nodes_info(self, with_additional_details: bool = False, mode: Optional[str] = None, filters:
+                            Optional[Dict[str, List[Union[float, int, str, List[float]]]]] = None, only_node_list:
+                            bool = False) -> List[Union[Dict[str, Union[float, np.ndarray, bool, str, List[float],
+                                                  List[np.ndarray]]], 'Node']]:
         """
         Retrieve a list of descendant nodes from a given node, including the node itself or retrieve a list of
         descendant nodes from the current instance of the `Tree` class.
@@ -48,16 +48,13 @@ class Node:
         returns these nodes names as a list.
 
         Args:
-            reverse (bool, optional): If `True`, the resulting list of nodes will be in reverse order.
-                                      If `False` (default), the nodes will be listed in their natural
-                                      traversal order.
             with_additional_details (bool, optional): `False` (default).
             mode (Optional[str]): `None` (default), 'pre-order', 'in-order', 'post-order', 'level-order'.
             filters (Dict, optional):
             only_node_list (Dict, optional): `False` (default).
         Returns:
             list: A list of nodes names including the specified `node` (or the current instance's nodes  names) and its
-                                    children. The list is ordered according to the `reverse` argument.
+                                    children.
         """
         list_result = []
         mode = 'pre-order' if mode is None or mode.lower() not in ('pre-order', 'in-order', 'post-order', 'level-order'
@@ -65,7 +62,7 @@ class Node:
         condition = with_additional_details or only_node_list
 
         def get_list(trees_node: Node) -> None:
-            nonlocal list_result, reverse, filters, mode, condition
+            nonlocal list_result, filters, mode, condition
 
             nodes_info = trees_node.get_nodes_info()
             list_item = trees_node if only_node_list else nodes_info
@@ -73,7 +70,7 @@ class Node:
                 if mode == 'pre-order':
                     list_result.append(list_item if condition else trees_node.name)
 
-                for i, child in enumerate(trees_node.children[::-1]) if reverse else enumerate(trees_node.children):
+                for i, child in enumerate(trees_node.children):
                     get_list(child)
                     if mode == 'in-order' and not i:
                         list_result.append(list_item if condition else trees_node.name)
@@ -85,7 +82,7 @@ class Node:
                 if mode == 'post-order':
                     list_result.append(list_item if condition else trees_node.name)
             else:
-                for child in trees_node.children[::-1] if reverse else trees_node.children:
+                for child in trees_node.children:
                     get_list(child)
 
         if mode == 'level-order':
@@ -96,9 +93,8 @@ class Node:
                     level_order_item = newick_node if only_node_list else newick_node.get_nodes_info()
                     list_result.append(level_order_item if condition else newick_node.name)
 
-                if newick_node.children[::-1] if reverse else newick_node.children:
-                    for nodes_child in newick_node.children:
-                        nodes_list.append(nodes_child)
+                for nodes_child in newick_node.children:
+                    nodes_list.append(nodes_child)
         else:
             get_list(self)
 
@@ -224,16 +220,15 @@ class Node:
 
         return expm(qmatrix * self.distance_to_father)
 
-    # @classmethod
-    def subtree_to_newick(self, reverse: bool = False, with_internal_nodes: bool = False, decimal_length: int = 0
+    def subtree_to_newick(self, with_internal_nodes: bool = False, decimal_length: int = 0
                           ) -> str:
         """This method is for internal use only."""
-        node_list = self.children[::-1] if reverse else self.children
+        node_list = self.children
         if node_list:
             result = '('
             for child in node_list:
                 if child.children:
-                    child_name = child.subtree_to_newick(reverse, with_internal_nodes, decimal_length)
+                    child_name = child.subtree_to_newick(with_internal_nodes, decimal_length)
                 else:
                     child_name = child.name
                 result += f'{child_name}:{str(child.distance_to_father).ljust(decimal_length, "0")},'

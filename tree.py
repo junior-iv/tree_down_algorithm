@@ -45,7 +45,7 @@ class Tree:
     def __ge__(self, other) -> bool:
         return self > other or self == other or len(str(self)) > len(str(other))
 
-    def print_node_list(self, reverse: bool = False, with_additional_details: bool = False, mode: Optional[str] = None,
+    def print_node_list(self, with_additional_details: bool = False, mode: Optional[str] = None,
                         filters: Optional[Dict[str, List[Union[float, int, str, List[float]]]]] = None) -> None:
         """
         Print a list of nodes.
@@ -55,15 +55,13 @@ class Tree:
         will be printed in its natural order.
 
         Args:
-            reverse (bool, optional): If `True`, print the nodes in reverse order. If `False` (default),
-                                      print the nodes in their natural order.
             with_additional_details (bool, optional): `False` (default)
             mode (Optional[str]): `None` (default), 'pre-order', 'in-order', 'post-order', 'level-order'.
             filters (Dict, optional):
         Returns:
             None: This function does not return any value; it only prints the nodes to the standard output.
         """
-        data_structure = self.root.get_list_nodes_info(reverse, with_additional_details, mode, filters)
+        data_structure = self.root.get_list_nodes_info(with_additional_details, mode, filters)
 
         str_result = ''
         for i in data_structure:
@@ -72,31 +70,28 @@ class Tree:
 
     def get_tree_info(self, filters: Optional[Dict[str, List[Union[float, int, str, List[float]]]]] = None
                       ) -> pd.Series:
-        nodes_info = self.get_list_nodes_info(False, True, 'pre-order', filters)
+        nodes_info = self.get_list_nodes_info(True, 'pre-order', filters)
 
         return pd.Series([pd.Series(i) for i in nodes_info], index=[i.get('node') for i in nodes_info])
 
-    def get_list_nodes_info(self, reverse: bool = False, with_additional_details: bool = False, mode: Optional[str] =
+    def get_list_nodes_info(self, with_additional_details: bool = False, mode: Optional[str] =
                             None, filters: Optional[Dict[str, List[Union[float, int, str, List[float]]]]] = None
                             ) -> List[Union[Dict[str, Union[float, np.ndarray, bool, str, List[float],
                                       List[np.ndarray]]], 'Node']]:
         """
         Args:
-            reverse (bool, optional): If `True`, the resulting list of nodes will be in reverse order.
-                                      If `False` (default), the nodes will be listed in their natural
-                                      traversal order.
             with_additional_details (bool, optional): `False` (default).
             mode (Optional[str]): `None` (default), 'pre-order', 'in-order', 'post-order', 'level-order'.
             filters (Dict, optional):
         """
-        return self.root.get_list_nodes_info(reverse, with_additional_details, mode, filters)
+        return self.root.get_list_nodes_info(with_additional_details, mode, filters)
 
     def get_node_count(self, filters: Optional[Dict[str, List[Union[float, int, str, List[float]]]]] = None) -> int:
         """
         Args:
             filters (Dict, optional):
         """
-        return len(self.get_list_nodes_info(False, True, None, filters))
+        return len(self.get_list_nodes_info(True, None, filters))
 
     def get_node_by_name(self, name: str) -> Optional[Node]:
 
@@ -245,7 +240,7 @@ class Tree:
             father.add_child(newick_node)
 
     def check_tree_for_binary(self) -> bool:
-        nodes_list = self.get_list_nodes_info(False, True)
+        nodes_list = self.get_list_nodes_info(True)
         for newick_node in nodes_list:
             for key in newick_node.keys():
                 if key == 'children' and len(newick_node.get(key)) > 2:
@@ -255,7 +250,7 @@ class Tree:
     def tree_to_table(self, sort_values_by: Optional[Tuple[str, ...]] = None, decimal_length: int = 8, columns: Optional
                       [Dict[str, str]] = None, filters: Optional[Dict[str, List[Union[float, int, str, List[float]]]]] =
                       None) -> pd.DataFrame:
-        nodes_info = self.get_list_nodes_info(False, True, None, filters)
+        nodes_info = self.get_list_nodes_info(True, None, filters)
         columns = columns if columns else {'node': 'Name', 'father_name': 'Parent', 'distance': 'Distance to father',
                                            'children': 'child', 'lavel': 'Lavel', 'node_type': 'Node type',
                                            'full_distance': 'Full distance', 'up_vector': 'Up', 'down_vector': 'Down',
@@ -287,7 +282,7 @@ class Tree:
         if node_name and isinstance(node_name, str):
             Tree.rename_nodes(self, node_name)
         if not newick_node:
-            node_list = self.root.get_list_nodes_info(False, False, None, {'node_type': ['node', 'root']}, True)
+            node_list = self.root.get_list_nodes_info(False, None, {'node_type': ['node', 'root']}, True)
             if node_list:
                 newick_node = np.random.choice(np.array(node_list))
         else:
@@ -317,7 +312,7 @@ class Tree:
 
     def get_pattern_dict(self, pattern: str, alphabet: Optional[Union[Tuple[str, ...], str]] = None
                          ) -> Dict[str, Union[Tuple[int], str]]:
-        list_nodes_info = self.get_list_nodes_info(False, True, 'pre-order', {'node_type': ['leaf']})
+        list_nodes_info = self.get_list_nodes_info(True, 'pre-order', {'node_type': ['leaf']})
         pattern_list = pattern.strip().split()
         pattern_list_size, pattern_dict = len(pattern_list), dict()
         if pattern_list_size == 1:
@@ -385,9 +380,15 @@ class Tree:
             newick_tree = Tree.check_tree(newick_tree)
 
         Tree.make_dir(file_name)
-        newick_text = f'{newick_tree.root.subtree_to_newick(False, with_internal_nodes, decimal_length)};'
+        newick_text = f'{newick_tree.root.subtree_to_newick(with_internal_nodes, decimal_length)};'
         with open(file_name, 'w') as f:
             f.write(newick_text)
+
+    @staticmethod
+    def get_random_name(lenght: int = 24) -> str:
+        abc_list = [_ for _ in 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890']
+
+        return ''.join(np.random.choice(abc_list, lenght))
 
     @staticmethod
     def tree_to_visual_format(newick_tree: Union[str, 'Tree'], file_name: str = 'tree_file.svg', file_extensions:
@@ -400,7 +401,7 @@ class Tree:
             newick_tree = Tree.check_tree(newick_tree)
 
         Tree.make_dir(file_name)
-        tmp_file = 'result_files/tmp_tree.tree'
+        tmp_file = f'result_files/{Tree.get_random_name()}.tree'
         Tree.make_dir(tmp_file)
         Tree.tree_to_newick_file(newick_tree, tmp_file, with_internal_nodes)
         phylogenetic_tree = Phylo.read(tmp_file, 'newick')
@@ -417,11 +418,12 @@ class Tree:
                 kwargs = {'format': file_extension, 'bbox_inches': 'tight', 'dpi': 300} if (
                         file_extension == 'svg') else {'format': file_extension}
                 plt.savefig(file_name, **kwargs)
+                plt.close()
         os.remove(tmp_file)
 
     @staticmethod
-    def tree_to_graph(newick_tree: Union[str, 'Tree'], file_name: str = 'graph', file_extensions: Optional[Union[str,
-                      Tuple[str, ...]]] = None, node_name: Optional[str] = None) -> None:
+    def tree_to_graph(newick_tree: Union[str, 'Tree'], file_name: str = 'graph.svg', file_extensions:
+                      Optional[Union[str, Tuple[str, ...]]] = None, node_name: Optional[str] = None) -> None:
         file_extensions = Tree.check_file_extensions_tuple(file_extensions, 'png')
         if node_name and isinstance(node_name, str):
             Tree.rename_nodes(newick_tree, node_name)
@@ -438,11 +440,12 @@ class Tree:
             graph = nx.Graph()
             for row in table.values:
                 graph.add_edge(row[1], row[0], length=(float(row[2]) if row[2] else 0.0))
-            if 'png' in file_extension:
+            if file_extension in ('svg', 'png'):
                 nx.draw(graph, with_labels=True, font_color='Maroon', node_color='Gold', node_size=1000,
                         font_weight='bold')
-                plt.savefig(file_name)
-            if 'dot' in file_extension:
+                plt.savefig(file_name, **{'format': file_extension, 'bbox_inches': 'tight', 'dpi': 300})
+                plt.close()
+            if file_extension in ('dot', ):
                 nx.drawing.nx_pydot.write_dot(graph, file_name)
 
     @staticmethod

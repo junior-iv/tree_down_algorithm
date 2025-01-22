@@ -13,7 +13,7 @@ def calculate_tree_likelihood_using_up_down_algorithm(alphabet: Union[Tuple[str,
     alphabet_size = len(alphabet)
     newick_node = newick_tree.root
 
-    leaves_info = newick_node.get_list_nodes_info(False, True, 'pre-order', {'node_type': ['leaf']})
+    leaves_info = newick_node.get_list_nodes_info(True, 'pre-order', {'node_type': ['leaf']})
 
     len_seq = len(list(pattern_msa_dict.values())[0])
     likelihood, log_likelihood, log_likelihood_list = 1, 0, []
@@ -53,7 +53,7 @@ def calculate_tree_likelihood(newick_tree: Union[str, Tree], pattern: Optional[s
     alphabet_size = len(alphabet)
 
     if verification_node_name:
-        nodes_info = newick_tree.get_list_nodes_info(False, True, 'pre-order')
+        nodes_info = newick_tree.get_list_nodes_info(True, 'pre-order')
         table = pd.Series([pd.Series(i) for i in nodes_info], index=[i.get('node') for i in nodes_info])
         for i in table:
             print(i)
