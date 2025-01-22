@@ -247,6 +247,15 @@ class Node:
         if distance_to_father is not None:
             child.distance_to_father = distance_to_father
 
+    def get_full_distance_to_father(self, return_list: bool = False) -> Union[List[float], float]:
+        list_result = []
+        father = self
+        while father:
+            list_result.append({'node': father, 'distance': father.distance_to_father})
+            father = father.father
+        result = [i['distance'] for i in list_result]
+        return result if return_list else sum(result)
+
     def get_full_distance_to_leaves(self, return_list: bool = False) -> Union[List[float], float]:
         list_result = []
         children = [self]
@@ -255,15 +264,6 @@ class Node:
             list_result.append({'node': child, 'distance': child.distance_to_father})
             for ch in child.children:
                 children.append(ch)
-        result = [i['distance'] for i in list_result]
-        return result if return_list else sum(result)
-
-    def get_full_distance_to_father(self, return_list: bool = False) -> Union[List[float], float]:
-        list_result = []
-        father = self
-        while father:
-            list_result.append({'node': father, 'distance': father.distance_to_father})
-            father = father.father
         result = [i['distance'] for i in list_result]
         return result if return_list else sum(result)
 

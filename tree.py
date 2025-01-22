@@ -385,12 +385,6 @@ class Tree:
             f.write(newick_text)
 
     @staticmethod
-    def get_random_name(lenght: int = 24) -> str:
-        abc_list = [_ for _ in 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890']
-
-        return ''.join(np.random.choice(abc_list, lenght))
-
-    @staticmethod
     def tree_to_visual_format(newick_tree: Union[str, 'Tree'], file_name: str = 'tree_file.svg', file_extensions:
                               Optional[Union[str, Tuple[str, ...]]] = None, with_internal_nodes: bool = False,
                               show_axes: bool = False, node_name: Optional[str] = None) -> None:
@@ -447,6 +441,12 @@ class Tree:
                 plt.close()
             if file_extension in ('dot', ):
                 nx.drawing.nx_pydot.write_dot(graph, file_name)
+
+    @staticmethod
+    def get_random_name(lenght: int = 24) -> str:
+        abc_list = [_ for _ in 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz1234567890']
+
+        return ''.join(np.random.choice(abc_list, lenght))
 
     @staticmethod
     def get_alphabet(search_argument: Union[Set[str], int, str]) -> Tuple[str, ...]:

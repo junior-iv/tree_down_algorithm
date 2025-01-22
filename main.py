@@ -38,6 +38,5 @@ if __name__ == '__main__':
     Tree.tree_to_csv(newick_tree_3, 'result_files/probable_character.csv', '\t', ('Name',), 0, columns1, node_name='N')
     table = newick_tree_3.get_tree_info()
     table2 = newick_tree_3.tree_to_table()
-
     print(table)
     print(table2)

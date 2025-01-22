@@ -49,7 +49,6 @@ def calculate_tree_likelihood(newick_tree: Union[str, Tree], pattern: Optional[s
 
     alphabet = Tree.get_alphabet_from_dict(pattern_dict)
     likelihood = calculate_tree_likelihood_using_up_down_algorithm(alphabet, newick_tree, pattern_dict, mode)
-
     alphabet_size = len(alphabet)
 
     if verification_node_name:
