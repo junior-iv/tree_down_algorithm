@@ -2,6 +2,8 @@ from typing import Optional, Dict, Union, List, Tuple
 from scipy.linalg import expm
 import pandas as pd
 import numpy as np
+from math import log
+from math import prod
 
 
 class Node:
@@ -154,64 +156,87 @@ class Node:
         return self.marginal_vector, likelihood
 
     def calculate_up(self, nodes_dict: Dict[str, Tuple[int, ...]], alphabet: Union[Tuple[str, ...], str]
-                     ) -> Union[Tuple[Union[List[np.ndarray], List[float]], float], float]:
+                     ) -> Union[Union[List[np.ndarray], List[float]], float]:
         alphabet_size = len(alphabet)
         if not self.children:
             self.up_vector = list(nodes_dict.get(self.name))
             self.likelihood = np.sum([1 / alphabet_size * i for i in self.up_vector])
             self.probable_character = alphabet[self.up_vector.index(max(self.up_vector))]
-            return self.up_vector, self.distance_to_father
+            return self.up_vector
 
-        l_vect, l_dist = self.children[0].calculate_up(nodes_dict, alphabet)
-        r_vect, r_dist = self.children[1].calculate_up(nodes_dict, alphabet)
-
-        l_qmatrix = self.children[0].get_jukes_cantor_qmatrix(alphabet_size)
-        r_qmatrix = self.children[1].get_jukes_cantor_qmatrix(alphabet_size)
+        dict_children = {}
+        for child in self.children:
+            dict_children.update({child.name: (child.get_jukes_cantor_qmatrix(alphabet_size),
+                                               child.calculate_up(nodes_dict, alphabet))})
 
         self.up_vector = []
         for j in range(alphabet_size):
-            prob_l = prob_r = 0
+            probabilities = {}
             for i in range(alphabet_size):
-                prob_l += l_qmatrix[j, i] * l_vect[i]
-                prob_r += r_qmatrix[j, i] * r_vect[i]
-            self.up_vector.append(prob_l * prob_r)
-
-        nodes_dict.update({self.name: self.up_vector})
-
+                for child in self.children:
+                    qmatrix, up_vector = dict_children.get(child.name)
+                    probabilities.update({child.name: probabilities.get(child.name, 0) + (qmatrix[j, i] * up_vector[i])}
+                                         )
+            self.up_vector.append(prod(probabilities.values()))
         self.likelihood = np.sum([1 / alphabet_size * i for i in self.up_vector])
 
         if self.father:
-            return self.up_vector, self.distance_to_father
+            return self.up_vector
         else:
             return self.likelihood
 
     def calculate_down(self, tree_info: pd.Series, alphabet_size: int) -> None:
         father = self.father
         if father:
-            brother_vector = b_qmatrix = None
+            dict_brothers = {}
             brothers = tuple(set(tree_info.get(father.name).get('children')) - {self.name})
-            if brothers:
-                brother = father.get_node_by_name(brothers[0])
-                if brother:
-                    brother_vector = brother.up_vector
-                    b_qmatrix = brother.get_jukes_cantor_qmatrix(alphabet_size)
+            brothers = [father.get_node_by_name(i) for i in brothers]
+            for brother in brothers:
+                dict_brothers.update({brother.name: (brother.get_jukes_cantor_qmatrix(alphabet_size),
+                                                     brother.up_vector)})
 
-            father_vector = father.down_vector
+            f_vector = father.down_vector
             f_qmatrix = father.get_jukes_cantor_qmatrix(alphabet_size)
             self.down_vector = []
             for j in range(alphabet_size):
-                prob_b = sum(
-                    [b_qmatrix[i, j] * brother_vector[i] for i in range(alphabet_size)]) if brother_vector else 1
-                prob_f = sum([f_qmatrix[i, j] * father_vector[i] for i in range(alphabet_size)]) if father.father else 1
-                self.down_vector.append(prob_f * prob_b)
+                probabilities = {}
+                for i in range(alphabet_size):
+                    for brother in brothers:
+                        b_qmatrix, b_vector = dict_brothers.get(brother.name)
+                        probabilities.update(
+                            {brother.name: probabilities.get(brother.name, 0) + (b_qmatrix[j, i] * b_vector[i])})
+                    probabilities.update(
+                        {father.name: probabilities.get(father.name, 0) + (f_qmatrix[j, i] * f_vector[i])})
 
-            if self.children:
-                self.children[0].calculate_down(tree_info, alphabet_size)
-                self.children[1].calculate_down(tree_info, alphabet_size)
+                self.down_vector.append(prod(probabilities.values()))
+
+            for child in self.children:
+                child.calculate_down(tree_info, alphabet_size)
         else:
             self.down_vector = [1] * alphabet_size
-            self.children[0].calculate_down(tree_info, alphabet_size)
-            self.children[1].calculate_down(tree_info, alphabet_size)
+            for child in self.children:
+                child.calculate_down(tree_info, alphabet_size)
+
+    def calculate_likelihood_for_msa(self, pattern_msa_dict: Dict[str, str], alphabet: Union[Tuple[str, ...], str]
+                                     ) -> Tuple[List[float], float, float]:
+
+        leaves_info = self.get_list_nodes_info(True, 'pre-order', {'node_type': ['leaf']})
+
+        len_seq = len(min(list(pattern_msa_dict.values())))
+        likelihood, log_likelihood, log_likelihood_list = 1, 0, []
+        for i_char in range(len_seq):
+            nodes_dict = dict()
+            for i in range(len(leaves_info)):
+                node_name = leaves_info[i].get('node')
+                character = pattern_msa_dict.get(node_name)[i_char]
+                nodes_dict.update({node_name: tuple([int(j == character) for j in alphabet])})
+
+            char_likelihood = self.calculate_up(nodes_dict, alphabet)
+            likelihood *= char_likelihood
+            log_likelihood += log(char_likelihood)
+            log_likelihood_list.append(log(char_likelihood))
+
+        return log_likelihood_list, log_likelihood, likelihood
 
     def get_jukes_cantor_qmatrix(self, alphabet_size: int) -> np.ndarray:
         qmatrix = np.ones((alphabet_size, alphabet_size))

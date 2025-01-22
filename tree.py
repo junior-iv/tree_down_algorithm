@@ -276,7 +276,7 @@ class Tree:
         if node_name and isinstance(node_name, str):
             Tree.rename_nodes(self, node_name)
         if not newick_node:
-            node_list = self.root.get_list_nodes_info(False, None, {'node_type': ['node', 'root']}, True)
+            node_list = self.root.get_list_nodes_info(False, None, {'node_type': ['node', 'root', 'leaf']}, True)
             if node_list:
                 newick_node = np.random.choice(np.array(node_list))
         else:
@@ -296,9 +296,8 @@ class Tree:
 
     def calculate_up(self, pattern: str, alphabet: Union[Tuple[str, ...], str]) -> Union[Tuple[Union[List[np.ndarray],
                                                                                          List[float]], float], float]:
-        pattern_dict = self.get_pattern_dict(pattern, alphabet)
 
-        return self.root.calculate_up(pattern_dict, alphabet)
+        return self.root.calculate_up(self.get_pattern_dict(pattern, alphabet), alphabet)
 
     def calculate_down(self, alphabet: Union[Tuple[str, ...], str]) -> None:
 
@@ -322,13 +321,17 @@ class Tree:
                 node_name = pattern_list[j + j][1::]
                 if self.find_dict_in_iterable(list_nodes_info, 'node', node_name):
                     if alphabet:
-                        value = [0] * len(alphabet)
-                        value[alphabet.index(pattern_list[j + j + 1])] = 1
+                        value = [int(k == pattern_list[j + j + 1]) for k in alphabet]
                     else:
                         value = pattern_list[j + j + 1]
                     pattern_dict.update({node_name: tuple(value)})
 
         return pattern_dict
+
+    def calculate_likelihood_for_msa(self, pattern: str, alphabet: Union[Tuple[str, ...], str]) -> Tuple[List[float],
+                                                                                                         float, float]:
+
+        return self.root.calculate_likelihood_for_msa(self.get_pattern_dict(pattern), alphabet)
 
     @staticmethod
     def tree_to_fasta(newick_tree: Union[str, 'Tree'], file_name: str = 'file.fasta', node_name: Optional[str] = None
@@ -341,7 +344,7 @@ class Tree:
         Tree.make_dir(file_name)
         columns = {'node': 'Name', 'probable_character': 'Probable Character', 'children': 'child', 'lavel': 'Lavel',
                    'node_type': 'Node Type'}
-        table = newick_tree.tree_to_table(('Node Type', 'Lavel', 'Name'), columns=columns)
+        table = newick_tree.tree_to_table(('Node Type', 'Name'), columns=columns)
         fasta_text = ''
         dict_table = table.to_dict()
         for i in table.T:
