@@ -50,9 +50,7 @@ class Tree:
         """
         Print a list of nodes.
 
-        This function prints a list of nodes. If the `reverse` argument is set to `True`, the list
-        of nodes will be printed in reverse order. By default, `reverse` is `False`, so the list
-        will be printed in its natural order.
+        This function prints a list of nodes.
 
         Args:
             with_additional_details (bool, optional): `False` (default)
@@ -97,25 +95,21 @@ class Tree:
 
         return self.root.get_node_by_name(name)
 
-    def get_newick(self, reverse: bool = False, with_internal_nodes: bool = False) -> str:
+    def get_newick(self, with_internal_nodes: bool = False) -> str:
 
         """
         Convert the current tree structure to a Newick formatted string.
 
         This function serializes the tree into a Newick format, which is a standard format for representing
-        tree structures. If the `reverse` argument is set to `True`, the order of the tree nodes in the
-        resulting Newick string will be reversed. By default, `reverse` is `False`, meaning the nodes
-        will appear in their natural order.
+        tree structures.
 
         Args:
-            reverse (bool, optional): If `True`, reverse the order of the nodes in the Newick string.
-                                      If `False` (default), preserve the natural order of the nodes.
             with_internal_nodes (bool, optional):
 
         Returns:
             str: A Newick formatted string representing the tree structure.
         """
-        return f'{self.root.subtree_to_newick(reverse, with_internal_nodes)};'
+        return f'{self.root.subtree_to_newick(with_internal_nodes)};'
 
     def find_node_by_name(self, name: str) -> bool:
         """
@@ -202,9 +196,9 @@ class Tree:
         """This method is for internal use only."""
         return self.structure_to_html_tree(self.tree_to_structure(), style, status)
 
-    def tree_to_structure(self, reverse: bool = False) -> dict:
+    def tree_to_structure(self) -> dict:
         """This method is for internal use only."""
-        return self.subtree_to_structure(self.root, reverse)
+        return self.subtree_to_structure(self.root)
 
     def add_distance_to_father(self, distance_to_father: float = 0) -> None:
         def add_distance(newick_node: Node) -> None:
@@ -216,14 +210,14 @@ class Tree:
 
         add_distance(self.root)
 
-    def get_edges_list(self, reverse: bool = False) -> List[str]:
+    def get_edges_list(self) -> List[str]:
         list_result = []
 
         def get_list(newick_node: Node) -> None:
             nonlocal list_result
             if newick_node.father:
                 list_result.append((newick_node.father.name, newick_node.name))
-            for child in newick_node.children[::-1] if reverse else newick_node.children:
+            for child in newick_node.children:
                 get_list(child)
 
         get_list(self.root)
@@ -588,12 +582,13 @@ class Tree:
                 f'{cls.__get_html_tree(structure, status)}</ul>')
 
     @classmethod
-    def subtree_to_structure(cls, newick_node: Node, reverse: bool = False) -> dict:
+    def subtree_to_structure(cls, newick_node: Node) -> Dict[str, str]:
         """This method is for internal use only."""
         dict_node = {'name': newick_node.name.strip(), 'distance_to_father': newick_node.distance_to_father}
         list_children = []
         if newick_node.children:
-            for child in newick_node.children[::-1] if reverse else newick_node.children:
-                list_children.append(cls.subtree_to_structure(child, reverse))
+            for child in newick_node.children:
+                list_children.append(cls.subtree_to_structure(child))
         dict_node.update({'children': list_children})
+
         return dict_node

@@ -17,7 +17,7 @@ if __name__ == '__main__':
     newick_tree_3 = Tree(newick_text_3)
     Tree.rename_nodes(newick_tree_3)
 
-    Tree.tree_to_graph(newick_tree_3, 'result_files/graph.txt', ('svg', 'dot', 'png'), 'N')
+    Tree.tree_to_graph(newick_tree_3, 'result_files/graph.txt', ('dot', 'png'), 'N')
     Tree.tree_to_newick_file(newick_tree_2, 'result_files/newick_tree.tree', True, 8, 'N')
     Tree.tree_to_visual_format(newick_tree_1, 'result_files/newick_tree.svg', ('svg', 'txt', 'png'), True, True, 'N')
     Tree.tree_to_csv(newick_tree_2, 'result_files/tree.csv', '\t', ('child', 'Name'), node_name='N')
